@@ -1,0 +1,144 @@
+from google import genai
+import json
+import re
+from typing import Dict, List, Any
+
+class LessonGeneratorAgent:
+    """Agent responsible for generating structured, professional lessons"""
+    
+    def __init__(self, api_key: str):
+        self.client = genai.Client(api_key=api_key)
+        self.model_name = 'gemini-2.5-flash-lite'
+        
+    def generate_lesson(self, topic: str) -> Dict[str, Any]:
+        """Generate a comprehensive lesson on the given topic"""
+        
+        prompt = f"""You are an expert educational content creator. Generate a comprehensive, engaging lesson on the topic: "{topic}"
+
+Structure the lesson with the following sections (return as valid JSON):
+{{
+    "title": "Lesson title",
+    "subtitle": "Brief engaging subtitle",
+    "introduction": {{
+        "text": "2-3 paragraphs introducing the topic",
+        "image_prompt": "Detailed description for an educational image"
+    }},
+    "key_concepts": [
+        {{
+            "title": "Concept name",
+            "description": "Detailed explanation",
+            "image_prompt": "Description for a relevant image"
+        }}
+    ],
+    "detailed_content": [
+        {{
+            "heading": "Section heading",
+            "paragraphs": ["paragraph 1", "paragraph 2"],
+            "image_prompt": "Optional image description or null"
+        }}
+    ],
+    "activities": {{
+        "title": "Practice Activities",
+        "items": [
+            {{
+                "title": "Activity name",
+                "description": "What to do",
+                "type": "exercise/quiz/project"
+            }}
+        ],
+        "image_prompt": "Description for an engaging activity illustration"
+    }},
+    "summary": {{
+        "text": "Key takeaways in 2-3 sentences",
+        "key_points": ["point 1", "point 2", "point 3"]
+    }},
+    "additional_resources": [
+        "Resource suggestion 1",
+        "Resource suggestion 2"
+    ]
+}}
+
+Make it professional, engaging, and educational. Include 3-5 key concepts and 2-4 detailed content sections.
+Return ONLY the JSON, no markdown formatting or extra text."""
+
+        try:
+            response = self.client.models.generate_content(
+                model=self.model_name,
+                contents=[prompt]
+            )
+            
+            # Extract text from response
+            lesson_text = ""
+            for part in response.parts:
+                if part.text is not None:
+                    lesson_text += part.text
+            
+            lesson_text = lesson_text.strip()
+            
+            # Clean up markdown formatting if present
+            lesson_text = re.sub(r'^```json\s*', '', lesson_text)
+            lesson_text = re.sub(r'\s*```$', '', lesson_text)
+            
+            lesson_data = json.loads(lesson_text)
+            
+            # Add metadata
+            lesson_data['topic'] = topic
+            lesson_data['version'] = 1
+            
+            return lesson_data
+            
+        except json.JSONDecodeError as e:
+            print(f"JSON parsing error: {e}")
+            print(f"Response text: {lesson_text}")
+            import traceback
+            traceback.print_exc()
+            # Return a basic structure if parsing fails
+            return self._create_fallback_lesson(topic)
+        except Exception as e:
+            print(f"Error generating lesson: {e}")
+            import traceback
+            traceback.print_exc()
+            return self._create_fallback_lesson(topic)
+    
+    def _create_fallback_lesson(self, topic: str) -> Dict[str, Any]:
+        """Create a basic lesson structure if generation fails"""
+        return {
+            "title": f"Introduction to {topic}",
+            "subtitle": "A comprehensive guide",
+            "topic": topic,
+            "version": 1,
+            "introduction": {
+                "text": f"This lesson covers the fundamentals of {topic}.",
+                "image_prompt": f"Educational illustration about {topic}"
+            },
+            "key_concepts": [
+                {
+                    "title": "Core Concept",
+                    "description": f"Understanding the basics of {topic}",
+                    "image_prompt": f"Diagram showing {topic} concepts"
+                }
+            ],
+            "detailed_content": [
+                {
+                    "heading": "Overview",
+                    "paragraphs": [f"Let's explore {topic} in detail."],
+                    "image_prompt": None
+                }
+            ],
+            "activities": {
+                "title": "Practice Activities",
+                "items": [
+                    {
+                        "title": "Explore Further",
+                        "description": f"Research more about {topic}",
+                        "type": "project"
+                    }
+                ],
+                "image_prompt": "Students learning together"
+            },
+            "summary": {
+                "text": f"This lesson introduced key concepts about {topic}.",
+                "key_points": [f"Understanding {topic}", "Practical applications"]
+            },
+            "additional_resources": ["Online tutorials", "Reference books"]
+        }
