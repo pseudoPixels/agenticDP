@@ -184,7 +184,7 @@ def edit_lesson(lesson_id):
             prompt = img_change['prompt']
             style = img_change.get('style', 'educational')
             
-            print(f"Regenerating image for {section}: {prompt}")
+            print(f"Regenerating image for {section} (style: {style}): {prompt}", flush=True)
             image_data = image_generator.generate_image(prompt, style)
             
             if image_data:
@@ -194,6 +194,9 @@ def edit_lesson(lesson_id):
                     key = section
                 lesson_store['images'][key] = image_data
                 new_images[key] = image_data
+                print(f"Image regenerated successfully for {key}", flush=True)
+            else:
+                print(f"WARNING: Image regeneration failed for {section}", flush=True)
         
         return jsonify({
             "success": True,
