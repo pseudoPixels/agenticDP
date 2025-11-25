@@ -30,7 +30,7 @@
   }
   
   .lesson-image {
-    @apply rounded-lg shadow-md w-full object-cover my-4 animate-fade-in;
+    @apply rounded-lg shadow-md w-full object-cover my-4 animate-fade-in min-h-[400px];
   }
   
   .concept-card {

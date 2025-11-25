@@ -3,10 +3,10 @@ import { Sparkles, Loader2, BookOpen, CheckCircle2, Circle } from 'lucide-react'
 import { generateLessonStream } from '../api';
 
 const AGENT_STEPS = [
-  { id: 'analyzing', label: 'Analyzing your request', duration: 500 },
-  { id: 'planning', label: 'Creating lesson plan', duration: 800 },
-  { id: 'researching', label: 'Researching topic content', duration: 1000 },
-  { id: 'drafting', label: 'Drafting lesson structure', duration: 1200 },
+  { id: 'analyzing', label: 'Analyzing your request', duration: 1200 },
+  { id: 'planning', label: 'Creating lesson plan', duration: 1500 },
+  { id: 'researching', label: 'Researching topic content', duration: 1800 },
+  { id: 'drafting', label: 'Drafting lesson structure', duration: 2000 },
   { id: 'generating', label: 'Generating detailed content', duration: 0 }, // This will complete when lesson is ready
 ];
 
