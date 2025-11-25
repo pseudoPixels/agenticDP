@@ -26,14 +26,17 @@ class ImageGeneratorAgent:
             )
             
             # Extract image from response
-            for part in response.parts:
-                if part.inline_data is not None:
-                    # Get the raw image data
-                    image_bytes = part.inline_data.data
-                    
-                    # Convert to base64
-                    base64_image = base64.b64encode(image_bytes).decode('utf-8')
-                    return f"data:image/png;base64,{base64_image}"
+            if hasattr(response, 'candidates') and response.candidates:
+                for candidate in response.candidates:
+                    if hasattr(candidate, 'content') and candidate.content:
+                        for part in candidate.content.parts:
+                            if hasattr(part, 'inline_data') and part.inline_data:
+                                # Get the raw image data
+                                image_bytes = part.inline_data.data
+                                
+                                # Convert to base64
+                                base64_image = base64.b64encode(image_bytes).decode('utf-8')
+                                return f"data:image/png;base64,{base64_image}"
             
             return None
             

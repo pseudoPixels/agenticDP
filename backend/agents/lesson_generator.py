@@ -69,9 +69,14 @@ Return ONLY the JSON, no markdown formatting or extra text."""
             
             # Extract text from response
             lesson_text = ""
-            for part in response.parts:
-                if part.text is not None:
-                    lesson_text += part.text
+            if hasattr(response, 'text') and response.text:
+                lesson_text = response.text
+            elif hasattr(response, 'candidates') and response.candidates:
+                for candidate in response.candidates:
+                    if hasattr(candidate, 'content') and candidate.content:
+                        for part in candidate.content.parts:
+                            if hasattr(part, 'text') and part.text:
+                                lesson_text += part.text
             
             lesson_text = lesson_text.strip()
             
