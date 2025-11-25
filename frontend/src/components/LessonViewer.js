@@ -3,7 +3,7 @@ import { BookOpen, Lightbulb, Target, CheckCircle, ExternalLink, Image as ImageI
 
 function ImagePlaceholder() {
   return (
-    <div className="float-right ml-6 mb-4 w-80 h-64 bg-gradient-to-br from-gray-100 to-gray-200 animate-pulse flex items-center justify-center rounded-lg shadow-md">
+    <div className="float-right ml-6 mb-4 w-80 h-64 bg-gradient-to-br from-gray-100 to-gray-200 animate-pulse flex items-center justify-center">
       <ImageIcon className="w-16 h-16 text-gray-400" />
     </div>
   );
@@ -14,7 +14,7 @@ function FloatingImage({ src, alt }) {
     <img
       src={src}
       alt={alt}
-      className="float-right ml-6 mb-4 w-80 rounded-lg shadow-md object-cover animate-fade-in"
+      className="float-right ml-6 mb-4 w-80 object-cover animate-fade-in"
     />
   );
 }
@@ -81,7 +81,8 @@ function LessonViewer({ lesson, images }) {
             {lesson.key_concepts.map((concept, index) => (
               <div key={index} className="mb-6">
                 <div className="clear-both">
-                  {concept.image_prompt && (
+                  {/* Only show image for the first key concept */}
+                  {index === 0 && concept.image_prompt && (
                     images[`key_concept_${index}`] ? (
                       <FloatingImage src={images[`key_concept_${index}`]} alt={concept.title} />
                     ) : (
@@ -109,13 +110,6 @@ function LessonViewer({ lesson, images }) {
             {lesson.detailed_content.map((section, index) => (
               <div key={index} className="mb-6">
                 <div className="clear-both">
-                  {section.image_prompt && (
-                    images[`detailed_content_${index}`] ? (
-                      <FloatingImage src={images[`detailed_content_${index}`]} alt={section.heading} />
-                    ) : (
-                      <ImagePlaceholder />
-                    )
-                  )}
                   <h3 className="lesson-subheading">{section.heading}</h3>
                   {section.paragraphs && section.paragraphs.map((paragraph, pIndex) => (
                     <p key={pIndex} className="lesson-text">{paragraph}</p>
@@ -135,13 +129,6 @@ function LessonViewer({ lesson, images }) {
               {lesson.activities.title || 'Practice Activities'}
             </h2>
             <div className="clear-both">
-              {lesson.activities.image_prompt && (
-                images.activities ? (
-                  <FloatingImage src={images.activities} alt="Activities" />
-                ) : (
-                  <ImagePlaceholder />
-                )
-              )}
               <div className="space-y-3">
                 {lesson.activities.items && lesson.activities.items.map((activity, index) => (
                   <div key={index} className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-4 border border-green-100">

@@ -61,7 +61,6 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
   useEffect(() => {
     if (!isGenerating || agentStep === 'generating') return;
 
-    let currentStepIndex = 0;
     const runSteps = async () => {
       for (let i = 0; i < AGENT_STEPS.length - 1; i++) {
         const step = AGENT_STEPS[i];
