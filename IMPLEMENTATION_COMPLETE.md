@@ -323,7 +323,7 @@ npm start
 ### If API Key Issues
 Check that `backend/.env` contains:
 ```
-GEMINI_API_KEY=AIzaSyDbTlnK08ZizX2DWO6RYQ1nFJCJ5ptJKgM
+GEMINI_API_KEY=
 ```
 
 ### If Port Conflicts
