@@ -1,10 +1,12 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, Response, stream_with_context
 from flask_cors import CORS
 import os
 from dotenv import load_dotenv
 from agents import LessonGeneratorAgent, ImageGeneratorAgent, LessonEditorAgent
 import uuid
 from typing import Dict, Any
+import json
+import time
 
 # Load environment variables
 load_dotenv()
@@ -13,7 +15,7 @@ app = Flask(__name__)
 CORS(app)
 
 # Initialize agents
-GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
+GEMINI_API_KEY = "AIzaSyCxJHkjPnHcWH2JV9vM3QIC4ZoFzDLzpng" #os.getenv('GEMINI_API_KEY')
 lesson_generator = LessonGeneratorAgent(GEMINI_API_KEY)
 image_generator = ImageGeneratorAgent(GEMINI_API_KEY)
 lesson_editor = LessonEditorAgent(GEMINI_API_KEY)
@@ -61,6 +63,95 @@ def generate_lesson():
     except Exception as e:
         print(f"Error in generate_lesson: {e}")
         return jsonify({"error": str(e)}), 500
+
+@app.route('/api/generate-lesson-stream', methods=['POST'])
+def generate_lesson_stream():
+    """Generate a lesson with streaming updates"""
+    def generate():
+        try:
+            # Get the request data before entering the generator
+            request_data = request.get_json()
+            topic = request_data.get('topic')
+            
+            if not topic:
+                yield f"data: {json.dumps({'error': 'Topic is required'})}\n\n"
+                return
+            
+            # Generate a unique lesson ID
+            lesson_id = str(uuid.uuid4())
+            
+            # Step 1: Send initial structure immediately
+            yield f"data: {json.dumps({'type': 'init', 'lesson_id': lesson_id, 'topic': topic})}\n\n"
+            
+            # Step 2: Generate lesson structure
+            print(f"Generating lesson for topic: {topic}", flush=True)
+            lesson_data = lesson_generator.generate_lesson(topic)
+            lesson_data['id'] = lesson_id
+            
+            # Store the lesson
+            lessons_store[lesson_id] = {
+                'data': lesson_data,
+                'images': {},
+                'image_generation_status': {}
+            }
+            
+            # Step 3: Send complete lesson structure
+            yield f"data: {json.dumps({'type': 'lesson', 'lesson': lesson_data})}\n\n"
+            
+            # Step 4: Generate images one by one and stream them
+            lesson_store = lessons_store[lesson_id]
+            
+            # Generate introduction image
+            if 'introduction' in lesson_data and 'image_prompt' in lesson_data['introduction']:
+                prompt = lesson_data['introduction']['image_prompt']
+                print(f"Generating introduction image: {prompt}", flush=True)
+                image_data = image_generator.generate_image(prompt, "educational")
+                if image_data:
+                    lesson_store['images']['introduction'] = image_data
+                    print(f"Sending introduction image, length: {len(image_data)}", flush=True)
+                    yield f"data: {json.dumps({'type': 'image', 'key': 'introduction', 'image': image_data})}\n\n"
+            
+            # Generate key concept images
+            if 'key_concepts' in lesson_data:
+                for idx, concept in enumerate(lesson_data['key_concepts']):
+                    if 'image_prompt' in concept and concept['image_prompt']:
+                        prompt = concept['image_prompt']
+                        print(f"Generating key concept {idx} image: {prompt}", flush=True)
+                        image_data = image_generator.generate_image(prompt, "educational")
+                        if image_data:
+                            key = f'key_concept_{idx}'
+                            lesson_store['images'][key] = image_data
+                            yield f"data: {json.dumps({'type': 'image', 'key': key, 'image': image_data})}\n\n"
+            
+            # Generate detailed content images
+            if 'detailed_content' in lesson_data:
+                for idx, section in enumerate(lesson_data['detailed_content']):
+                    if 'image_prompt' in section and section['image_prompt']:
+                        prompt = section['image_prompt']
+                        print(f"Generating detailed content {idx} image: {prompt}", flush=True)
+                        image_data = image_generator.generate_image(prompt, "educational")
+                        if image_data:
+                            key = f'detailed_content_{idx}'
+                            lesson_store['images'][key] = image_data
+                            yield f"data: {json.dumps({'type': 'image', 'key': key, 'image': image_data})}\n\n"
+            
+            # Generate activities image
+            if 'activities' in lesson_data and 'image_prompt' in lesson_data['activities']:
+                prompt = lesson_data['activities']['image_prompt']
+                print(f"Generating activities image: {prompt}", flush=True)
+                image_data = image_generator.generate_image(prompt, "educational")
+                if image_data:
+                    lesson_store['images']['activities'] = image_data
+                    yield f"data: {json.dumps({'type': 'image', 'key': 'activities', 'image': image_data})}\n\n"
+            
+            # Step 5: Send completion
+            yield f"data: {json.dumps({'type': 'complete'})}\n\n"
+            
+        except Exception as e:
+            print(f"Error in generate_lesson_stream: {e}", flush=True)
+            yield f"data: {json.dumps({'type': 'error', 'error': str(e)})}\n\n"
+    
+    return Response(stream_with_context(generate()), mimetype='text/event-stream')
 
 @app.route('/api/generate-images/<lesson_id>', methods=['POST'])
 def generate_images(lesson_id):

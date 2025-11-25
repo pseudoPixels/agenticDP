@@ -10,8 +10,13 @@ function App() {
   const [isGenerating, setIsGenerating] = useState(false);
 
   const handleLessonGenerated = (lesson, images) => {
+    console.log('App.js - handleLessonGenerated called with images:', Object.keys(images));
     setCurrentLesson(lesson);
-    setLessonImages(images);
+    setLessonImages(prevImages => {
+      const merged = { ...prevImages, ...images };
+      console.log('App.js - merged images:', Object.keys(merged));
+      return merged;
+    });
   };
 
   const handleLessonUpdated = (updatedLesson, updatedImages) => {
@@ -20,8 +25,10 @@ function App() {
   };
 
   const handleNewLesson = () => {
+    console.log('App.js - Resetting lesson and images');
     setCurrentLesson(null);
     setLessonImages({});
+    setIsGenerating(false);
   };
 
   return (

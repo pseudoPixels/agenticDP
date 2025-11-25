@@ -1,10 +1,80 @@
-import React, { useState } from 'react';
-import { Sparkles, Loader2, BookOpen } from 'lucide-react';
-import { generateLesson, generateImages } from '../api';
+import React, { useState, useEffect } from 'react';
+import { Sparkles, Loader2, BookOpen, CheckCircle2, Circle } from 'lucide-react';
+import { generateLessonStream } from '../api';
+
+const AGENT_STEPS = [
+  { id: 'analyzing', label: 'Analyzing your request', duration: 500 },
+  { id: 'planning', label: 'Creating lesson plan', duration: 800 },
+  { id: 'researching', label: 'Researching topic content', duration: 1000 },
+  { id: 'drafting', label: 'Drafting lesson structure', duration: 1200 },
+  { id: 'generating', label: 'Generating detailed content', duration: 0 }, // This will complete when lesson is ready
+];
+
+function AgentProgress({ currentStep, completedSteps }) {
+  return (
+    <div className="mt-4 p-4 bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
+      <div className="space-y-3">
+        {AGENT_STEPS.map((step, index) => {
+          const isCompleted = completedSteps.includes(step.id);
+          const isCurrent = currentStep === step.id;
+          
+          return (
+            <div
+              key={step.id}
+              className={`flex items-center gap-3 transition-all duration-300 ${
+                isCompleted || isCurrent ? 'opacity-100' : 'opacity-40'
+              }`}
+            >
+              {isCompleted ? (
+                <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+              ) : isCurrent ? (
+                <Loader2 className="w-5 h-5 text-blue-600 animate-spin flex-shrink-0" />
+              ) : (
+                <Circle className="w-5 h-5 text-gray-400 flex-shrink-0" />
+              )}
+              <span
+                className={`text-sm font-medium ${
+                  isCompleted
+                    ? 'text-green-700'
+                    : isCurrent
+                    ? 'text-blue-700'
+                    : 'text-gray-500'
+                }`}
+              >
+                {step.label}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
   const [topic, setTopic] = useState('');
   const [status, setStatus] = useState('');
+  const [agentStep, setAgentStep] = useState('');
+  const [completedSteps, setCompletedSteps] = useState([]);
+
+  // Simulate agent steps before actual generation
+  useEffect(() => {
+    if (!isGenerating || agentStep === 'generating') return;
+
+    let currentStepIndex = 0;
+    const runSteps = async () => {
+      for (let i = 0; i < AGENT_STEPS.length - 1; i++) {
+        const step = AGENT_STEPS[i];
+        setAgentStep(step.id);
+        await new Promise(resolve => setTimeout(resolve, step.duration));
+        setCompletedSteps(prev => [...prev, step.id]);
+      }
+      // Set to final step but don't complete it yet
+      setAgentStep('generating');
+    };
+
+    runSteps();
+  }, [isGenerating, agentStep]);
 
   const handleGenerate = async (e) => {
     e.preventDefault();
@@ -14,38 +84,56 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
     }
 
     setIsGenerating(true);
-    setStatus('Generating lesson structure...');
+    setStatus('Generating lesson...');
+    setAgentStep('analyzing');
+    setCompletedSteps([]);
+
+    let currentLesson = null;
+    let currentImages = {};
 
     try {
-      // Step 1: Generate lesson structure
-      const lessonResponse = await generateLesson(topic);
-      
-      if (lessonResponse.success) {
-        const lessonId = lessonResponse.lesson_id;
-        const lessonData = lessonResponse.lesson;
-        
-        setStatus('Generating images with Imagen (Nano Banana)...');
-        
-        // Step 2: Generate images
-        const imagesResponse = await generateImages(lessonId);
-        
-        console.log('Images response:', imagesResponse);
-        console.log('Images data:', imagesResponse.images);
-        
-        if (imagesResponse.success) {
+      await generateLessonStream(topic, (data) => {
+        if (data.type === 'init') {
+          // Initial connection established
+        } else if (data.type === 'lesson') {
+          // Complete the generating step
+          setCompletedSteps(prev => [...prev, 'generating']);
+          setStatus('Lesson ready! Loading images...');
+          currentLesson = data.lesson;
+          // Immediately show the lesson structure with empty images
+          onLessonGenerated(currentLesson, {});
+        } else if (data.type === 'image') {
+          // Update images as they come in
+          currentImages[data.key] = data.image;
+          console.log('Image received:', data.key, 'Total images:', Object.keys(currentImages).length);
+          console.log('Image data preview:', data.image.substring(0, 50));
+          if (currentLesson) {
+            // Create a new object to trigger re-render
+            const updatedImages = { ...currentImages };
+            onLessonGenerated(currentLesson, updatedImages);
+          }
+        } else if (data.type === 'complete') {
           setStatus('Lesson generated successfully!');
-          onLessonGenerated(lessonData, imagesResponse.images);
-        } else {
-          // Even if images fail, show the lesson
-          console.warn('Image generation failed, showing lesson without images');
-          onLessonGenerated(lessonData, {});
+          setIsGenerating(false);
+          setTimeout(() => {
+            setStatus('');
+            setAgentStep('');
+            setCompletedSteps([]);
+          }, 3000);
+        } else if (data.type === 'error') {
+          console.error('Error generating lesson:', data.error);
+          setStatus('Error generating lesson. Please try again.');
+          setIsGenerating(false);
+          setAgentStep('');
+          setCompletedSteps([]);
         }
-      }
+      });
     } catch (error) {
       console.error('Error generating lesson:', error);
       setStatus('Error generating lesson. Please try again.');
-    } finally {
       setIsGenerating(false);
+      setAgentStep('');
+      setCompletedSteps([]);
       setTimeout(() => setStatus(''), 3000);
     }
   };
@@ -99,10 +187,14 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
         </button>
       </form>
 
-      {status && (
-        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <p className="text-blue-800 text-sm font-medium flex items-center gap-2">
-            {isGenerating && <Loader2 className="w-4 h-4 animate-spin" />}
+      {isGenerating && agentStep && (
+        <AgentProgress currentStep={agentStep} completedSteps={completedSteps} />
+      )}
+
+      {status && !isGenerating && (
+        <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+          <p className="text-green-800 text-sm font-medium flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4" />
             {status}
           </p>
         </div>

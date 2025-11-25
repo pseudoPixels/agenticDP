@@ -14,6 +14,60 @@ export const generateLesson = async (topic) => {
   return response.data;
 };
 
+export const generateLessonStream = async (topic, onUpdate) => {
+  const response = await fetch(`${API_BASE_URL}/generate-lesson-stream`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ topic }),
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to generate lesson');
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      
+      if (done) break;
+      
+      // Decode and add to buffer
+      buffer += decoder.decode(value, { stream: true });
+      
+      // Split by double newline (SSE message separator)
+      const messages = buffer.split('\n\n');
+      
+      // Keep the last incomplete message in buffer
+      buffer = messages.pop() || '';
+      
+      // Process complete messages
+      for (const message of messages) {
+        const lines = message.split('\n');
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const jsonStr = line.slice(6);
+              console.log('Parsing SSE data:', jsonStr.substring(0, 100));
+              const data = JSON.parse(jsonStr);
+              onUpdate(data);
+            } catch (e) {
+              console.error('Failed to parse SSE message:', line.substring(0, 100), e);
+            }
+          }
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+};
+
 export const generateImages = async (lessonId) => {
   const response = await api.post(`/generate-images/${lessonId}`);
   return response.data;

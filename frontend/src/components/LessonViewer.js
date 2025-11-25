@@ -1,6 +1,14 @@
 import React from 'react';
 import { BookOpen, Lightbulb, Target, CheckCircle, ExternalLink, Image as ImageIcon } from 'lucide-react';
 
+function ImagePlaceholder() {
+  return (
+    <div className="lesson-image bg-gradient-to-br from-gray-100 to-gray-200 animate-pulse flex items-center justify-center">
+      <ImageIcon className="w-16 h-16 text-gray-400" />
+    </div>
+  );
+}
+
 function LessonViewer({ lesson, images }) {
   if (!lesson) return null;
 
@@ -38,12 +46,16 @@ function LessonViewer({ lesson, images }) {
             Introduction
           </h2>
           <p className="lesson-text">{lesson.introduction.text}</p>
-          {images.introduction && (
-            <img
-              src={images.introduction}
-              alt="Introduction"
-              className="lesson-image"
-            />
+          {lesson.introduction.image_prompt && (
+            images.introduction ? (
+              <img
+                src={images.introduction}
+                alt="Introduction"
+                className="lesson-image"
+              />
+            ) : (
+              <ImagePlaceholder />
+            )
           )}
         </div>
       )}
@@ -62,12 +74,16 @@ function LessonViewer({ lesson, images }) {
                   {concept.title}
                 </h3>
                 <p className="lesson-text">{concept.description}</p>
-                {images[`key_concept_${index}`] && (
-                  <img
-                    src={images[`key_concept_${index}`]}
-                    alt={concept.title}
-                    className="lesson-image"
-                  />
+                {concept.image_prompt && (
+                  images[`key_concept_${index}`] ? (
+                    <img
+                      src={images[`key_concept_${index}`]}
+                      alt={concept.title}
+                      className="lesson-image"
+                    />
+                  ) : (
+                    <ImagePlaceholder />
+                  )
                 )}
               </div>
             ))}
@@ -89,12 +105,16 @@ function LessonViewer({ lesson, images }) {
                 {section.paragraphs && section.paragraphs.map((paragraph, pIndex) => (
                   <p key={pIndex} className="lesson-text">{paragraph}</p>
                 ))}
-                {images[`detailed_content_${index}`] && (
-                  <img
-                    src={images[`detailed_content_${index}`]}
-                    alt={section.heading}
-                    className="lesson-image"
-                  />
+                {section.image_prompt && (
+                  images[`detailed_content_${index}`] ? (
+                    <img
+                      src={images[`detailed_content_${index}`]}
+                      alt={section.heading}
+                      className="lesson-image"
+                    />
+                  ) : (
+                    <ImagePlaceholder />
+                  )
                 )}
               </div>
             ))}
@@ -109,12 +129,16 @@ function LessonViewer({ lesson, images }) {
             <CheckCircle className="w-6 h-6 text-green-500" />
             {lesson.activities.title || 'Practice Activities'}
           </h2>
-          {images.activities && (
-            <img
-              src={images.activities}
-              alt="Activities"
-              className="lesson-image mb-4"
-            />
+          {lesson.activities.image_prompt && (
+            images.activities ? (
+              <img
+                src={images.activities}
+                alt="Activities"
+                className="lesson-image mb-4"
+              />
+            ) : (
+              <ImagePlaceholder />
+            )
           )}
           <div className="space-y-3">
             {lesson.activities.items && lesson.activities.items.map((activity, index) => (
