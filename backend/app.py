@@ -15,7 +15,7 @@ app = Flask(__name__)
 CORS(app)
 
 # Initialize agents
-GEMINI_API_KEY = "AIzaSyCxJHkjPnHcWH2JV9vM3QIC4ZoFzDLzpng" #os.getenv('GEMINI_API_KEY')
+GEMINI_API_KEY = "" #os.getenv('GEMINI_API_KEY')
 lesson_generator = LessonGeneratorAgent(GEMINI_API_KEY)
 image_generator = ImageGeneratorAgent(GEMINI_API_KEY)
 lesson_editor = LessonEditorAgent(GEMINI_API_KEY)
