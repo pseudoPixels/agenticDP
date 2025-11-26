@@ -188,10 +188,22 @@ INSTRUCTIONS:
 6. Maintain the JSON structure and all required fields
 7. Keep the lesson_id unchanged
 
-IMPORTANT: 
+IMPORTANT IMAGE HANDLING:
+- For "add images to all sections": Add image_prompt to introduction, ALL key_concepts, ALL detailed_content, activities, and summary
+- For "add another image to X section": Convert image_prompt to array format: "image_prompts": ["existing prompt", "new prompt"]
+- For "make the second image X style": Identify which is the second image in display order (intro=1st, key_concept_0=2nd) and update that style
+- For "add image to summary/activities": Add image_prompt field to that section
 - For image prompts, be very specific and descriptive
-- If user wants a specific style (cartoon, realistic, black and white, etc), include that in EVERY image_prompt
+- If user wants a specific style (cartoon, realistic, black and white, etc), include that in the image_prompt
 - If adding a section with an image, create a detailed image_prompt for it
+- Support both single image_prompt (string) and multiple image_prompts (array) formats
+
+DISPLAY ORDER OF IMAGES (for reference when user says "second image", "third image", etc):
+1. Introduction image (if exists)
+2. First key concept image (key_concepts[0])
+3. Detailed content images (if any)
+4. Activities image (if exists)
+5. Summary image (if exists)
 
 Return ONLY the complete updated lesson as valid JSON, no markdown or extra text."""
 
@@ -221,21 +233,37 @@ Return ONLY the complete updated lesson as valid JSON, no markdown or extra text
         image_style = plan.get('new_image_style', 'educational')
         image_targets = plan.get('image_targets', [])
         
+        print(f"🖼️  Generating image changes. Targets: {image_targets}, Style: {image_style}")
+        
         # If no specific targets, check all sections that have image prompts
         if not image_targets or 'all' in str(image_targets).lower():
-            # Check introduction
-            if 'introduction' in updated_lesson and 'image_prompt' in updated_lesson['introduction']:
-                image_changes.append({
-                    'section': 'introduction',
-                    'index': None,
-                    'prompt': updated_lesson['introduction']['image_prompt'],
-                    'style': image_style
-                })
+            # Check introduction (supports both single and multiple images)
+            if 'introduction' in updated_lesson:
+                intro = updated_lesson['introduction']
+                # Handle array of prompts
+                if 'image_prompts' in intro and isinstance(intro['image_prompts'], list):
+                    for img_idx, prompt in enumerate(intro['image_prompts']):
+                        image_changes.append({
+                            'section': 'introduction',
+                            'index': None,
+                            'sub_index': img_idx,
+                            'prompt': prompt,
+                            'style': image_style
+                        })
+                # Handle single prompt
+                elif 'image_prompt' in intro:
+                    image_changes.append({
+                        'section': 'introduction',
+                        'index': None,
+                        'sub_index': None,
+                        'prompt': intro['image_prompt'],
+                        'style': image_style
+                    })
             
-            # Check key concepts (only first one as per display logic)
+            # Check ALL key concepts (not just first one when regenerating all)
             if 'key_concepts' in updated_lesson:
                 for idx, concept in enumerate(updated_lesson['key_concepts']):
-                    if idx == 0 and 'image_prompt' in concept:  # Only first concept
+                    if 'image_prompt' in concept:
                         image_changes.append({
                             'section': 'key_concepts',
                             'index': idx,

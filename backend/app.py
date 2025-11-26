@@ -277,10 +277,11 @@ def edit_lesson(lesson_id):
         for img_change in image_sections:
             section = img_change['section']
             index = img_change.get('index')
+            sub_index = img_change.get('sub_index')
             prompt = img_change['prompt']
             style = img_change.get('style', 'educational')
             
-            print(f"Regenerating image for {section} (index: {index}, style: {style}): {prompt}", flush=True)
+            print(f"Regenerating image for {section} (index: {index}, sub_index: {sub_index}, style: {style}): {prompt}", flush=True)
             image_data = image_generator.generate_image(prompt, style)
             
             if image_data:
@@ -289,6 +290,9 @@ def edit_lesson(lesson_id):
                     key = f"key_concept_{index}"
                 elif index is not None:
                     key = f"{section}_{index}"
+                elif sub_index is not None:
+                    # Handle multiple images per section (e.g., introduction_0, introduction_1)
+                    key = f"{section}_{sub_index}"
                 else:
                     key = section
                 

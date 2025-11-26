@@ -58,11 +58,23 @@ function LessonViewer({ lesson, images }) {
               Introduction
             </h2>
             <div className="clear-both">
-              {lesson.introduction.image_prompt && (
-                images.introduction ? (
-                  <FloatingImage src={images.introduction} alt="Introduction" />
-                ) : (
-                  <ImagePlaceholder />
+              {/* Handle multiple images */}
+              {lesson.introduction.image_prompts && Array.isArray(lesson.introduction.image_prompts) ? (
+                lesson.introduction.image_prompts.map((prompt, idx) => (
+                  images[`introduction_${idx}`] ? (
+                    <FloatingImage key={idx} src={images[`introduction_${idx}`]} alt={`Introduction ${idx + 1}`} />
+                  ) : (
+                    <ImagePlaceholder key={idx} />
+                  )
+                ))
+              ) : (
+                /* Handle single image */
+                lesson.introduction.image_prompt && (
+                  images.introduction ? (
+                    <FloatingImage src={images.introduction} alt="Introduction" />
+                  ) : (
+                    <ImagePlaceholder />
+                  )
                 )
               )}
               <p className="lesson-text">{lesson.introduction.text}</p>
@@ -81,13 +93,9 @@ function LessonViewer({ lesson, images }) {
             {lesson.key_concepts.map((concept, index) => (
               <div key={index} className="mb-6">
                 <div className="clear-both">
-                  {/* Only show image for the first key concept */}
-                  {index === 0 && concept.image_prompt && (
-                    images[`key_concept_${index}`] ? (
-                      <FloatingImage src={images[`key_concept_${index}`]} alt={concept.title} />
-                    ) : (
-                      <ImagePlaceholder />
-                    )
+                  {/* Show image if it exists for this concept */}
+                  {concept.image_prompt && images[`key_concept_${index}`] && (
+                    <FloatingImage src={images[`key_concept_${index}`]} alt={concept.title} />
                   )}
                   <h3 className="text-xl font-semibold text-blue-700 mb-2">
                     {concept.title}
@@ -110,6 +118,10 @@ function LessonViewer({ lesson, images }) {
             {lesson.detailed_content.map((section, index) => (
               <div key={index} className="mb-6">
                 <div className="clear-both">
+                  {/* Show image if it exists for this section */}
+                  {section.image_prompt && images[`detailed_content_${index}`] && (
+                    <FloatingImage src={images[`detailed_content_${index}`]} alt={section.heading} />
+                  )}
                   <h3 className="lesson-subheading">{section.heading}</h3>
                   {section.paragraphs && section.paragraphs.map((paragraph, pIndex) => (
                     <p key={pIndex} className="lesson-text">{paragraph}</p>
@@ -129,6 +141,10 @@ function LessonViewer({ lesson, images }) {
               {lesson.activities.title || 'Practice Activities'}
             </h2>
             <div className="clear-both">
+              {/* Show image if it exists for activities */}
+              {lesson.activities.image_prompt && images.activities && (
+                <FloatingImage src={images.activities} alt="Activities" />
+              )}
               <div className="space-y-3">
                 {lesson.activities.items && lesson.activities.items.map((activity, index) => (
                   <div key={index} className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-4 border border-green-100">
@@ -163,7 +179,14 @@ function LessonViewer({ lesson, images }) {
               <CheckCircle className="w-6 h-6 text-amber-600" />
               Summary
             </h2>
-            <p className="lesson-text font-medium text-gray-700">{lesson.summary.text}</p>
+            <div className="clear-both">
+              {/* Show image if it exists for summary */}
+              {lesson.summary.image_prompt && images.summary && (
+                <FloatingImage src={images.summary} alt="Summary" />
+              )}
+              <p className="lesson-text font-medium text-gray-700">{lesson.summary.text}</p>
+            </div>
+            <div className="clear-both"></div>
             {lesson.summary.key_points && lesson.summary.key_points.length > 0 && (
               <div className="mt-4">
                 <h3 className="font-semibold text-gray-800 mb-2">Key Takeaways:</h3>
