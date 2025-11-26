@@ -29,17 +29,17 @@ function LessonViewer({ lesson, images }) {
   return (
     <div className="space-y-6">
       {/* Title Section */}
-      <div className="lesson-card bg-gradient-to-br from-primary-500 to-indigo-600 text-white">
-        <div className="flex items-start gap-4">
-          <div className="bg-white/20 p-3 rounded-lg">
-            <BookOpen className="w-8 h-8" />
+      <div className="lesson-card bg-gradient-to-br from-emerald-400 to-teal-500 text-white">
+        <div className="flex items-start gap-3 sm:gap-4">
+          <div className="bg-white/20 p-2 sm:p-3 rounded-lg">
+            <BookOpen className="w-6 h-6 sm:w-8 sm:h-8" />
           </div>
           <div className="flex-1">
-            <h1 className="text-4xl font-bold mb-2">{lesson.title}</h1>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2">{lesson.title}</h1>
             {lesson.subtitle && (
-              <p className="text-xl text-white/90">{lesson.subtitle}</p>
+              <p className="text-base sm:text-lg lg:text-xl text-white/90">{lesson.subtitle}</p>
             )}
-            <div className="mt-4 flex items-center gap-4 text-sm text-white/80">
+            <div className="mt-3 sm:mt-4 flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-white/80">
               <span>Version {lesson.version}</span>
               <span>•</span>
               <span>Topic: {lesson.topic}</span>

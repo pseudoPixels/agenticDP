@@ -134,30 +134,52 @@ function App() {
       </header>
 
       {/* Main Content */}
-      <main className={!currentLesson ? "" : "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"}>
-        {!currentLesson ? (
+      {!currentLesson ? (
+        <main>
           <LessonGenerator
             onLessonGenerated={handleLessonGenerated}
             isGenerating={isGenerating}
             setIsGenerating={setIsGenerating}
           />
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Lesson Content - 2/3 width */}
-            <div className="lg:col-span-2">
+        </main>
+      ) : (
+        <>
+          {/* Desktop Layout - Side by side */}
+          <main className="hidden lg:block max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Lesson Content - 2/3 width */}
+              <div className="lg:col-span-2">
+                <LessonViewer lesson={currentLesson} images={lessonImages} />
+              </div>
+
+              {/* Chat Editor - 1/3 width */}
+              <div className="lg:col-span-1">
+                <ChatEditor
+                  lessonId={currentLesson.id}
+                  onLessonUpdated={handleLessonUpdated}
+                />
+              </div>
+            </div>
+          </main>
+
+          {/* Mobile Layout - ChatGPT style */}
+          <main className="lg:hidden flex flex-col h-[calc(100vh-4rem)]">
+            {/* Lesson Content - Scrollable */}
+            <div className="flex-1 overflow-y-auto px-4 py-4">
               <LessonViewer lesson={currentLesson} images={lessonImages} />
             </div>
 
-            {/* Chat Editor - 1/3 width */}
-            <div className="lg:col-span-1">
+            {/* Chat Editor - Fixed at bottom */}
+            <div className="border-t border-gray-200 bg-white">
               <ChatEditor
                 lessonId={currentLesson.id}
                 onLessonUpdated={handleLessonUpdated}
+                isMobile={true}
               />
             </div>
-          </div>
-        )}
-      </main>
+          </main>
+        </>
+      )}
 
     </div>
   );

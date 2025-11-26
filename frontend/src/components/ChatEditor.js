@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { MessageCircle, Send, Loader2, Sparkles } from 'lucide-react';
 import { editLesson } from '../api';
 
-function ChatEditor({ lessonId, onLessonUpdated }) {
+function ChatEditor({ lessonId, onLessonUpdated, isMobile = false }) {
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
@@ -88,6 +88,39 @@ function ChatEditor({ lessonId, onLessonUpdated }) {
     setInput(action);
   };
 
+  if (isMobile) {
+    // Mobile ChatGPT-style layout
+    return (
+      <div className="p-4">
+        {/* Input - Always visible at bottom */}
+        <form onSubmit={handleSubmit}>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Type your edit request..."
+              disabled={isProcessing}
+              className="flex-1 px-4 py-3 text-sm border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent disabled:opacity-50"
+            />
+            <button
+              type="submit"
+              disabled={isProcessing || !input.trim()}
+              className="bg-gradient-to-r from-emerald-400 to-teal-400 hover:from-emerald-500 hover:to-teal-500 text-white p-3 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isProcessing ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <Send className="w-5 h-5" />
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    );
+  }
+
+  // Desktop layout
   return (
     <div className="lesson-card h-[calc(100vh-12rem)] flex flex-col sticky top-4">
       {/* Header */}
