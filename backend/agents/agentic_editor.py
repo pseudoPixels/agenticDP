@@ -311,29 +311,62 @@ Return ONLY the complete updated lesson as valid JSON, no markdown or extra text
                             'style': image_style
                         })
                 
-                elif target.startswith('key_concept'):
-                    idx = int(target.split('_')[-1]) if '_' in target else 0
-                    if 'key_concepts' in updated_lesson and idx < len(updated_lesson['key_concepts']):
-                        concept = updated_lesson['key_concepts'][idx]
-                        if 'image_prompt' in concept:
-                            image_changes.append({
-                                'section': 'key_concepts',
-                                'index': idx,
-                                'prompt': concept['image_prompt'],
-                                'style': image_style
-                            })
+                elif target.startswith('key_concept') or target == 'key_concepts':
+                    # If target is just 'key_concepts', add images to ALL key concepts
+                    if target == 'key_concepts':
+                        if 'key_concepts' in updated_lesson:
+                            for idx, concept in enumerate(updated_lesson['key_concepts']):
+                                if 'image_prompt' in concept:
+                                    image_changes.append({
+                                        'section': 'key_concepts',
+                                        'index': idx,
+                                        'prompt': concept['image_prompt'],
+                                        'style': image_style
+                                    })
+                    else:
+                        # Target has specific index like 'key_concept_0'
+                        try:
+                            idx = int(target.split('_')[-1])
+                            if 'key_concepts' in updated_lesson and idx < len(updated_lesson['key_concepts']):
+                                concept = updated_lesson['key_concepts'][idx]
+                                if 'image_prompt' in concept:
+                                    image_changes.append({
+                                        'section': 'key_concepts',
+                                        'index': idx,
+                                        'prompt': concept['image_prompt'],
+                                        'style': image_style
+                                    })
+                        except ValueError:
+                            print(f"⚠️  Warning: Could not parse index from target: {target}")
                 
-                elif target.startswith('detailed_content'):
-                    idx = int(target.split('_')[-1]) if '_' in target else 0
-                    if 'detailed_content' in updated_lesson and idx < len(updated_lesson['detailed_content']):
-                        section = updated_lesson['detailed_content'][idx]
-                        if 'image_prompt' in section:
-                            image_changes.append({
-                                'section': 'detailed_content',
-                                'index': idx,
-                                'prompt': section['image_prompt'],
-                                'style': image_style
-                            })
+                elif target.startswith('detailed_content') or target == 'detailed_content':
+                    # If target is just 'detailed_content', add images to ALL detailed content sections
+                    if target == 'detailed_content':
+                        if 'detailed_content' in updated_lesson:
+                            for idx, section in enumerate(updated_lesson['detailed_content']):
+                                if 'image_prompt' in section:
+                                    image_changes.append({
+                                        'section': 'detailed_content',
+                                        'index': idx,
+                                        'prompt': section['image_prompt'],
+                                        'style': image_style
+                                    })
+                    else:
+                        # Target has specific index like 'detailed_content_0'
+                        try:
+                            idx = int(target.split('_')[-1])
+                            if 'detailed_content' in updated_lesson and idx < len(updated_lesson['detailed_content']):
+                                section = updated_lesson['detailed_content'][idx]
+                                if 'image_prompt' in section:
+                                    image_changes.append({
+                                        'section': 'detailed_content',
+                                        'index': idx,
+                                        'prompt': section['image_prompt'],
+                                        'style': image_style
+                                    })
+                        except ValueError:
+                            # If parsing fails, skip this target
+                            print(f"⚠️  Warning: Could not parse index from target: {target}")
                 
                 elif target == 'activities':
                     if 'activities' in updated_lesson and 'image_prompt' in updated_lesson['activities']:
