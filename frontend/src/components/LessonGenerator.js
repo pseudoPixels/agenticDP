@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, Loader2, CheckCircle2, Circle, ChevronDown, Check } from 'lucide-react';
+import { Sparkles, Loader2, CheckCircle2, Circle, ChevronDown, Check, Lightbulb } from 'lucide-react';
 import { generateLessonStream } from '../api';
 
 const AGENT_STEPS = [
@@ -58,6 +58,8 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
   const [completedSteps, setCompletedSteps] = useState([]);
   const [selectedType, setSelectedType] = useState('Lesson Plan');
   const [showTypeDropdown, setShowTypeDropdown] = useState(false);
+  const [showIdeasPopup, setShowIdeasPopup] = useState(false);
+  const [randomPrompts, setRandomPrompts] = useState([]);
   
   const contentTypes = [
     'Lesson Plan',
@@ -86,7 +88,15 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
     "Create a child-friendly lesson on the Five Pillars with activities.",
     "Make a homeschool lesson summarizing a Prophet’s story for kids.",
     "Generate a beginners’ lesson on basic daily duas with examples."
-  ].sort(() => Math.random() - 0.5).slice(0, 3);
+  ];
+
+  // Generate 5 random prompts when popup opens
+  useEffect(() => {
+    if (showIdeasPopup) {
+      const shuffled = [...homeschool_prompts].sort(() => Math.random() - 0.5);
+      setRandomPrompts(shuffled.slice(0, 5));
+    }
+  }, [showIdeasPopup]);
 
   // Simulate agent steps before actual generation
   useEffect(() => {
@@ -220,7 +230,7 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
               placeholder="Plan a Grade 3 science lesson on plants..."
-              className="w-full h-48 px-4 py-4 text-base text-gray-900 placeholder-gray-400 bg-white border-0 rounded-lg resize-none focus:outline-none focus:ring-0"
+              className="w-full h-32 px-4 py-4 text-base text-gray-900 placeholder-gray-400 bg-white border-0 rounded-lg resize-none focus:outline-none focus:ring-0"
               disabled={isGenerating}
             />
           </div>
@@ -263,12 +273,48 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
         )}
       </div>
 
-      {/* Try Example */}
-      <div className="mt-8 text-center">
-        <p className="text-sm text-gray-500">
-          Try: <span className="text-gray-700 italic">'Create a spelling worksheet for 3rd grade.'</span>
-        </p>
-      </div>
+      {/* Floating "Need ideas?" Button - Bottom Right */}
+      {!isGenerating && (
+        <div className="fixed bottom-8 right-8 z-50">
+          <button
+            onClick={() => setShowIdeasPopup(!showIdeasPopup)}
+            className="flex items-center gap-2 px-5 py-3 bg-white text-gray-700 font-medium rounded-full shadow-lg border border-gray-200 hover:shadow-xl transition-all"
+          >
+            <Lightbulb className="w-5 h-5 text-emerald-500" />
+            <span>Need ideas?</span>
+          </button>
+
+          {/* Ideas Popup */}
+          {showIdeasPopup && (
+            <>
+              {/* Backdrop */}
+              <div 
+                className="fixed inset-0 bg-black bg-opacity-20 -z-10"
+                onClick={() => setShowIdeasPopup(false)}
+              />
+              
+              {/* Popup Card */}
+              <div className="absolute bottom-full right-0 mb-4 w-[90vw] sm:w-[500px] bg-white rounded-2xl shadow-2xl border border-gray-200 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Try one of these:</h3>
+                <div className="space-y-3">
+                  {randomPrompts.map((prompt, index) => (
+                    <button
+                      key={index}
+                      onClick={() => {
+                        setTopic(prompt);
+                        setShowIdeasPopup(false);
+                      }}
+                      className="w-full text-left px-4 py-3 text-sm text-gray-700 bg-gray-50 hover:bg-emerald-50 rounded-lg transition-colors border border-gray-200"
+                    >
+                      {prompt}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }
