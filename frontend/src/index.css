@@ -6,6 +6,15 @@
   body {
     @apply bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen;
   }
+  
+  /* Safe area support for mobile devices */
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  .pb-safe {
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
 }
 
 @layer components {

@@ -163,14 +163,14 @@ function App() {
           </main>
 
           {/* Mobile Layout - ChatGPT style */}
-          <main className="lg:hidden flex flex-col h-[calc(100vh-4rem)]">
+          <main className="lg:hidden flex flex-col" style={{ height: 'calc(100vh - 4rem)' }}>
             {/* Lesson Content - Scrollable */}
             <div className="flex-1 overflow-y-auto px-4 py-4">
               <LessonViewer lesson={currentLesson} images={lessonImages} />
             </div>
 
             {/* Chat Editor - Fixed at bottom */}
-            <div className="border-t border-gray-200 bg-white">
+            <div className="border-t border-gray-200 bg-white safe-bottom">
               <ChatEditor
                 lessonId={currentLesson.id}
                 onLessonUpdated={handleLessonUpdated}
