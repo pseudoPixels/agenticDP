@@ -6,7 +6,7 @@ function ChatEditor({ lessonId, onLessonUpdated }) {
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
-      content: '👋 Hi! I\'m your AI lesson editor. I can help you with:\n\n📝 **Text Edits:**\n• "Make the introduction longer"\n• "Rewrite everything in Batman theme"\n• "Add more examples to key concepts"\n\n🖼️ **Image Edits:**\n• "Make the intro image black and white"\n• "Change all images to cartoon style"\n• "Add an image to the summary section"\n• "Remove all images"\n\n➕ **Structure Changes:**\n• "Add a new section called \'Real World Examples\'"\n• "Add a \'Household Example\' section with an image"\n• "Remove the activities section"\n\nJust tell me what you want to change!'
+      content: '👋 Hi! I\'m your Doodlepad Agent. I can help you with:\n\n📝 **Text Edits:**\n• "Make the introduction longer"\n• "Rewrite everything in Batman theme"\n• "Add more examples to key concepts"\n\n🖼️ **Image Edits:**\n• "Make the intro image suitable for grade 5 kid"\n• "Change all images to cartoon style"\n• "Add an image to the summary section"\n• "Remove all images"\n\n➕ **Structure Changes:**\n• "Add a new section called \'Real World Examples\'"\n• "Add a \'Household Example\' section with an image"\n• "Remove the activities section"\n\nJust tell me what you want to change!'
     }
   ]);
   const [input, setInput] = useState('');
@@ -78,11 +78,9 @@ function ChatEditor({ lessonId, onLessonUpdated }) {
   };
 
   const quickActions = [
-    'Make intro image black and white',
-    'Add a "Real World Examples" section',
+    'Make intro image suitable for grade 5 kid',
     'Rewrite in Batman theme',
     'Change all images to cartoon style',
-    'Add image to summary',
     'Make introduction longer'
   ];
 
