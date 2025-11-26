@@ -3,6 +3,7 @@ from flask_cors import CORS
 import os
 from dotenv import load_dotenv
 from agents import LessonGeneratorAgent, ImageGeneratorAgent, LessonEditorAgent
+from agents.agentic_editor import AgenticLessonEditor
 import uuid
 from typing import Dict, Any
 import json
@@ -15,13 +16,14 @@ app = Flask(__name__)
 CORS(app)
 
 # Initialize agents
-GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
+GEMINI_API_KEY = "AIzaSyDuomQDulK2XhamRpZqluVRr_xySHLzYWk" #os.getenv('GEMINI_API_KEY')
 if not GEMINI_API_KEY:
     raise ValueError("GEMINI_API_KEY not found in environment variables. Please create a .env file with your API key.")
 
 lesson_generator = LessonGeneratorAgent(GEMINI_API_KEY)
 image_generator = ImageGeneratorAgent(GEMINI_API_KEY)
 lesson_editor = LessonEditorAgent(GEMINI_API_KEY)
+agentic_editor = AgenticLessonEditor(GEMINI_API_KEY)
 
 # In-memory storage for lessons (in production, use a database)
 lessons_store: Dict[str, Dict[str, Any]] = {}
@@ -257,9 +259,9 @@ def edit_lesson(lesson_id):
         lesson_store = lessons_store[lesson_id]
         current_lesson = lesson_store['data']
         
-        # Process the edit request
-        print(f"Processing edit request: {edit_request}")
-        updated_lesson, image_sections = lesson_editor.process_edit_request(
+        # Process the edit request using the agentic editor
+        print(f"Processing edit request with agentic editor: {edit_request}")
+        updated_lesson, image_sections = agentic_editor.process_edit_request(
             current_lesson, 
             edit_request
         )
@@ -278,17 +280,21 @@ def edit_lesson(lesson_id):
             prompt = img_change['prompt']
             style = img_change.get('style', 'educational')
             
-            print(f"Regenerating image for {section} (style: {style}): {prompt}", flush=True)
+            print(f"Regenerating image for {section} (index: {index}, style: {style}): {prompt}", flush=True)
             image_data = image_generator.generate_image(prompt, style)
             
             if image_data:
-                if index is not None:
+                # Map section names to the correct key format used in frontend
+                if section == 'key_concepts' and index is not None:
+                    key = f"key_concept_{index}"
+                elif index is not None:
                     key = f"{section}_{index}"
                 else:
                     key = section
+                
                 lesson_store['images'][key] = image_data
                 new_images[key] = image_data
-                print(f"Image regenerated successfully for {key}", flush=True)
+                print(f"Image regenerated successfully for key: {key}", flush=True)
             else:
                 print(f"WARNING: Image regeneration failed for {section}", flush=True)
         
