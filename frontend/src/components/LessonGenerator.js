@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, Loader2, BookOpen, CheckCircle2, Circle } from 'lucide-react';
+import { Sparkles, Loader2, CheckCircle2, Circle, ChevronDown, Check } from 'lucide-react';
 import { generateLessonStream } from '../api';
 
 const AGENT_STEPS = [
@@ -56,6 +56,18 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
   const [status, setStatus] = useState('');
   const [agentStep, setAgentStep] = useState('');
   const [completedSteps, setCompletedSteps] = useState([]);
+  const [selectedType, setSelectedType] = useState('Lesson Plan');
+  const [showTypeDropdown, setShowTypeDropdown] = useState(false);
+  
+  const contentTypes = [
+    'Lesson Plan',
+    'Worksheet',
+    'Presentation Deck',
+    'Curriculum',
+    'Flashcards',
+    'Quiz/Assignment'
+  ];
+  
   const homeschool_prompts = [
     "Create a simple homeschool lesson on the Solar System with activities.",
     "Make a child-friendly Water Cycle lesson with diagram and experiment.",
@@ -157,85 +169,106 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
   };
 
   return (
-    <div className="lesson-card">
-      <div className="text-center mb-8">
-        <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-primary-500 to-indigo-600 rounded-full mb-4">
-          <BookOpen className="w-8 h-8 text-white" />
-        </div>
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">
-          Generate Your Lesson
-        </h2>
-        <p className="text-gray-600">
-          Enter any topic and let AI create a comprehensive, professional lesson with images
-        </p>
+    <div className="min-h-[80vh] flex flex-col items-center justify-center px-4">
+      {/* Main Heading */}
+      <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 text-center mb-12 max-w-4xl">
+        Let's create something for your homeschool today
+      </h1>
+
+      {/* Main Card */}
+      <div className="w-full max-w-4xl bg-white rounded-2xl shadow-sm border border-gray-200 p-8 sm:p-12">
+        <form onSubmit={handleGenerate} className="space-y-6">
+          {/* Content Type Dropdown */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setShowTypeDropdown(!showTypeDropdown)}
+              onBlur={() => setTimeout(() => setShowTypeDropdown(false), 200)}
+              className="w-full sm:w-64 flex items-center justify-between px-4 py-3 bg-white border border-gray-300 rounded-lg text-left text-gray-900 hover:bg-gray-50 transition-colors"
+              disabled={isGenerating}
+            >
+              <span className="font-medium">{selectedType}</span>
+              <ChevronDown className="w-5 h-5 text-gray-500" />
+            </button>
+
+            {/* Dropdown Menu */}
+            {showTypeDropdown && (
+              <div className="absolute top-full mt-2 left-0 w-full sm:w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                {contentTypes.map((type) => (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() => {
+                      setSelectedType(type);
+                      setShowTypeDropdown(false);
+                    }}
+                    className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 transition-colors flex items-center justify-between"
+                  >
+                    <span>{type}</span>
+                    {selectedType === type && (
+                      <Check className="w-4 h-4 text-emerald-500" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Large Text Area */}
+          <div>
+            <textarea
+              value={topic}
+              onChange={(e) => setTopic(e.target.value)}
+              placeholder="Plan a Grade 3 science lesson on plants..."
+              className="w-full h-48 px-4 py-4 text-base text-gray-900 placeholder-gray-400 bg-white border-0 rounded-lg resize-none focus:outline-none focus:ring-0"
+              disabled={isGenerating}
+            />
+          </div>
+
+          {/* Create Button */}
+          <button
+            type="submit"
+            disabled={isGenerating || !topic.trim()}
+            className="w-full py-4 bg-gradient-to-r from-emerald-400 to-teal-400 hover:from-emerald-500 hover:to-teal-500 text-white font-medium rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Creating...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-5 h-5" />
+                Create
+              </>
+            )}
+          </button>
+        </form>
+
+        {/* Agent Progress */}
+        {isGenerating && agentStep && (
+          <div className="mt-6">
+            <AgentProgress currentStep={agentStep} completedSteps={completedSteps} />
+          </div>
+        )}
+
+        {/* Success Status */}
+        {status && !isGenerating && (
+          <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <p className="text-green-800 text-sm font-medium flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4" />
+              {status}
+            </p>
+          </div>
+        )}
       </div>
 
-      <form onSubmit={handleGenerate} className="space-y-4">
-        <div>
-          <label htmlFor="topic" className="block text-sm font-medium text-gray-700 mb-2">
-            Lesson Topic
-          </label>
-          <input
-            type="text"
-            id="topic"
-            value={topic}
-            onChange={(e) => setTopic(e.target.value)}
-            placeholder="e.g., Photosynthesis, World War II, Machine Learning..."
-            className="input-field"
-            disabled={isGenerating}
-          />
-        </div>
-
-        <button
-          type="submit"
-          disabled={isGenerating || !topic.trim()}
-          className="btn-primary w-full flex items-center justify-center gap-2"
-        >
-          {isGenerating ? (
-            <>
-              <Loader2 className="w-5 h-5 animate-spin" />
-              Generating...
-            </>
-          ) : (
-            <>
-              <Sparkles className="w-5 h-5" />
-              Generate Lesson
-            </>
-          )}
-        </button>
-      </form>
-
-      {isGenerating && agentStep && (
-        <AgentProgress currentStep={agentStep} completedSteps={completedSteps} />
-      )}
-
-      {status && !isGenerating && (
-        <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-          <p className="text-green-800 text-sm font-medium flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4" />
-            {status}
-          </p>
-        </div>
-      )}
-
-      {/* Example Topics */}
-      <div className="mt-8 pt-6 border-t border-gray-200">
-          <p className="text-sm font-medium text-gray-700 mb-3">Try these topics:</p>
-
-          <div className="flex flex-wrap gap-2">
-            {homeschool_prompts
-              .map((exampleTopic) => (
-                <button
-                  key={exampleTopic}
-                  onClick={() => setTopic(exampleTopic)}
-                  disabled={isGenerating}
-                  className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full transition-colors disabled:opacity-50"
-                >
-                  {exampleTopic}
-                </button>
-              ))}
-          </div>
-        </div>
+      {/* Try Example */}
+      <div className="mt-8 text-center">
+        <p className="text-sm text-gray-500">
+          Try: <span className="text-gray-700 italic">'Create a spelling worksheet for 3rd grade.'</span>
+        </p>
+      </div>
     </div>
   );
 }
