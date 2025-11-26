@@ -54,7 +54,7 @@ function LessonViewer({ lesson, images }) {
         {lesson.introduction && (
           <div className="mb-8">
             <h2 className="lesson-heading">
-              <BookOpen className="w-6 h-6 text-primary-500" />
+              <BookOpen className="w-6 h-6 text-emerald-500" />
               Introduction
             </h2>
             <div className="clear-both">
@@ -87,7 +87,7 @@ function LessonViewer({ lesson, images }) {
         {lesson.key_concepts && lesson.key_concepts.length > 0 && (
           <div className="mb-8">
             <h2 className="lesson-heading">
-              <Lightbulb className="w-6 h-6 text-yellow-500" />
+              <Lightbulb className="w-6 h-6 text-emerald-500" />
               Key Concepts
             </h2>
             {lesson.key_concepts.map((concept, index) => (
@@ -97,7 +97,7 @@ function LessonViewer({ lesson, images }) {
                   {concept.image_prompt && images[`key_concept_${index}`] && (
                     <FloatingImage src={images[`key_concept_${index}`]} alt={concept.title} />
                   )}
-                  <h3 className="text-xl font-semibold text-blue-700 mb-2">
+                  <h3 className="text-xl font-semibold text-emerald-700 mb-2">
                     {concept.title}
                   </h3>
                   <p className="lesson-text">{concept.description}</p>
@@ -112,7 +112,7 @@ function LessonViewer({ lesson, images }) {
         {lesson.detailed_content && lesson.detailed_content.length > 0 && (
           <div className="mb-8">
             <h2 className="lesson-heading">
-              <Target className="w-6 h-6 text-purple-500" />
+              <Target className="w-6 h-6 text-teal-500" />
               Detailed Content
             </h2>
             {lesson.detailed_content.map((section, index) => (
@@ -137,7 +137,7 @@ function LessonViewer({ lesson, images }) {
         {lesson.activities && (
           <div className="mb-8">
             <h2 className="lesson-heading">
-              <CheckCircle className="w-6 h-6 text-green-500" />
+              <CheckCircle className="w-6 h-6 text-emerald-500" />
               {lesson.activities.title || 'Practice Activities'}
             </h2>
             <div className="clear-both">
@@ -149,7 +149,7 @@ function LessonViewer({ lesson, images }) {
                 {lesson.activities.items && lesson.activities.items.map((activity, index) => (
                   <div key={index} className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-4 border border-green-100">
                     <div className="flex items-start gap-3">
-                      <div className="bg-green-200 text-green-700 rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm flex-shrink-0">
+                      <div className="bg-emerald-200 text-emerald-700 rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm flex-shrink-0">
                         {index + 1}
                       </div>
                       <div className="flex-1">
@@ -158,7 +158,7 @@ function LessonViewer({ lesson, images }) {
                         </h4>
                         <p className="text-gray-600 text-sm">{activity.description}</p>
                         {activity.type && (
-                          <span className="inline-block mt-2 px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
+                          <span className="inline-block mt-2 px-2 py-1 bg-emerald-100 text-emerald-700 text-xs rounded-full">
                             {activity.type}
                           </span>
                         )}
@@ -174,9 +174,9 @@ function LessonViewer({ lesson, images }) {
 
         {/* Summary */}
         {lesson.summary && (
-          <div className="mb-8 p-6 bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-lg">
+          <div className="mb-8 p-6 bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 rounded-lg">
             <h2 className="lesson-heading">
-              <CheckCircle className="w-6 h-6 text-amber-600" />
+              <CheckCircle className="w-6 h-6 text-emerald-600" />
               Summary
             </h2>
             <div className="clear-both">
@@ -193,7 +193,7 @@ function LessonViewer({ lesson, images }) {
                 <ul className="space-y-2">
                   {lesson.summary.key_points.map((point, index) => (
                     <li key={index} className="flex items-start gap-2">
-                      <CheckCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                      <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
                       <span className="text-gray-700">{point}</span>
                     </li>
                   ))}
@@ -207,13 +207,13 @@ function LessonViewer({ lesson, images }) {
         {lesson.additional_resources && lesson.additional_resources.length > 0 && (
           <div>
             <h2 className="lesson-heading">
-              <ExternalLink className="w-6 h-6 text-blue-500" />
+              <ExternalLink className="w-6 h-6 text-teal-500" />
               Additional Resources
             </h2>
             <ul className="space-y-2">
               {lesson.additional_resources.map((resource, index) => (
                 <li key={index} className="flex items-start gap-2">
-                  <ExternalLink className="w-4 h-4 text-blue-500 flex-shrink-0 mt-1" />
+                  <ExternalLink className="w-4 h-4 text-teal-500 flex-shrink-0 mt-1" />
                   <span className="text-gray-700">{resource}</span>
                 </li>
               ))}

@@ -34,7 +34,7 @@
   }
   
   .concept-card {
-    @apply bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-5 mb-4 border border-blue-100 hover:shadow-md transition-shadow;
+    @apply bg-gradient-to-br from-emerald-50 to-teal-50 rounded-lg p-5 mb-4 border border-emerald-100 hover:shadow-md transition-shadow;
   }
   
   .activity-card {
@@ -46,7 +46,7 @@
   }
   
   .chat-message.user {
-    @apply bg-primary-500 text-white ml-auto;
+    @apply bg-gradient-to-r from-emerald-400 to-teal-400 text-white ml-auto;
   }
   
   .chat-message.assistant {

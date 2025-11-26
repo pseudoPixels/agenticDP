@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MessageCircle, Send, Loader2, Sparkles } from 'lucide-react';
+import { MessageCircle, Send, Loader2 } from 'lucide-react';
 import { editLesson } from '../api';
 
 function ChatEditor({ lessonId, onLessonUpdated, isMobile = false }) {
@@ -125,7 +125,7 @@ function ChatEditor({ lessonId, onLessonUpdated, isMobile = false }) {
     <div className="lesson-card h-[calc(100vh-12rem)] flex flex-col sticky top-4">
       {/* Header */}
       <div className="flex items-center gap-3 pb-4 border-b border-gray-200">
-        <div className="bg-gradient-to-br from-primary-500 to-indigo-600 p-2 rounded-lg">
+        <div className="bg-gradient-to-br from-emerald-400 to-teal-500 p-2 rounded-lg">
           <MessageCircle className="w-5 h-5 text-white" />
         </div>
         <div>
@@ -181,12 +181,12 @@ function ChatEditor({ lessonId, onLessonUpdated, isMobile = false }) {
             onChange={(e) => setInput(e.target.value)}
             placeholder="Type your edit request..."
             disabled={isProcessing}
-            className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:opacity-50"
+            className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent disabled:opacity-50"
           />
           <button
             type="submit"
             disabled={isProcessing || !input.trim()}
-            className="bg-primary-500 hover:bg-primary-600 text-white p-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-gradient-to-r from-emerald-400 to-teal-400 hover:from-emerald-500 hover:to-teal-500 text-white p-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isProcessing ? (
               <Loader2 className="w-5 h-5 animate-spin" />
