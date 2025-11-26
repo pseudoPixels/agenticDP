@@ -56,6 +56,25 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
   const [status, setStatus] = useState('');
   const [agentStep, setAgentStep] = useState('');
   const [completedSteps, setCompletedSteps] = useState([]);
+  const homeschool_prompts = [
+    "Create a simple homeschool lesson on the Solar System with activities.",
+    "Make a child-friendly Water Cycle lesson with diagram and experiment.",
+    "Explain photosynthesis in a fun homeschool lesson with vocab and activity.",
+    "Create a Human Body Systems lesson for kids with examples.",
+    "Make a Life Cycle of a Butterfly lesson with coloring activity.",
+    "Generate a Forces and Motion homeschool lesson with simple experiments.",
+    "Create an Earth’s Layers lesson with craft and visual aid.",
+    "Make a Simple Machines lesson using household items and demonstrations.",
+    "Create a homeschool fractions lesson using food examples.",
+    "Make a multiplication basics lesson with games for kids.",
+    "Generate a shapes and geometry lesson with cut-and-paste activity.",
+    "Create a reading comprehension lesson using a short story and questions.",
+    "Make a creative writing prompt lesson with steps and examples.",
+    "Generate a parts-of-speech lesson with simple practice sentences.",
+    "Create a child-friendly lesson on the Five Pillars with activities.",
+    "Make a homeschool lesson summarizing a Prophet’s story for kids.",
+    "Generate a beginners’ lesson on basic daily duas with examples."
+  ].sort(() => Math.random() - 0.5).slice(0, 3);
 
   // Simulate agent steps before actual generation
   useEffect(() => {
@@ -201,20 +220,22 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
 
       {/* Example Topics */}
       <div className="mt-8 pt-6 border-t border-gray-200">
-        <p className="text-sm font-medium text-gray-700 mb-3">Try these topics:</p>
-        <div className="flex flex-wrap gap-2">
-          {['Photosynthesis', 'Ancient Egypt', 'JavaScript Basics', 'Climate Change', 'Quantum Physics'].map((exampleTopic) => (
-            <button
-              key={exampleTopic}
-              onClick={() => setTopic(exampleTopic)}
-              disabled={isGenerating}
-              className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full transition-colors disabled:opacity-50"
-            >
-              {exampleTopic}
-            </button>
-          ))}
+          <p className="text-sm font-medium text-gray-700 mb-3">Try these topics:</p>
+
+          <div className="flex flex-wrap gap-2">
+            {homeschool_prompts
+              .map((exampleTopic) => (
+                <button
+                  key={exampleTopic}
+                  onClick={() => setTopic(exampleTopic)}
+                  disabled={isGenerating}
+                  className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full transition-colors disabled:opacity-50"
+                >
+                  {exampleTopic}
+                </button>
+              ))}
+          </div>
         </div>
-      </div>
     </div>
   );
 }
