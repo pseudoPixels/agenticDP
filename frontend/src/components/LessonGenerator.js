@@ -60,6 +60,7 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
   const [showTypeDropdown, setShowTypeDropdown] = useState(false);
   const [showIdeasPopup, setShowIdeasPopup] = useState(false);
   const [randomPrompts, setRandomPrompts] = useState([]);
+  const [placeholderText, setPlaceholderText] = useState('');
   
   const contentTypes = [
     'Lesson Plan',
@@ -89,6 +90,12 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
     "Make a homeschool lesson summarizing a Prophet’s story for kids.",
     "Generate a beginners’ lesson on basic daily duas with examples."
   ];
+
+  // Set random placeholder on component mount
+  useEffect(() => {
+    const randomIndex = Math.floor(Math.random() * homeschool_prompts.length);
+    setPlaceholderText(homeschool_prompts[randomIndex]);
+  }, []);
 
   // Generate 5 random prompts when popup opens
   useEffect(() => {
@@ -229,7 +236,7 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
             <textarea
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
-              placeholder="Plan a Grade 3 science lesson on plants..."
+              placeholder={placeholderText}
               className="w-full h-32 px-4 py-4 text-base text-gray-900 placeholder-gray-400 bg-white border-0 rounded-lg resize-none focus:outline-none focus:ring-0"
               disabled={isGenerating}
             />
