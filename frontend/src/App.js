@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BookOpen, Sparkles } from 'lucide-react';
+import { Sparkles, Plus, HelpCircle, ChevronDown } from 'lucide-react';
 import LessonGenerator from './components/LessonGenerator';
 import LessonViewer from './components/LessonViewer';
 import ChatEditor from './components/ChatEditor';
@@ -8,6 +8,7 @@ function App() {
   const [currentLesson, setCurrentLesson] = useState(null);
   const [lessonImages, setLessonImages] = useState({});
   const [isGenerating, setIsGenerating] = useState(false);
+  const [showLearnMoreMenu, setShowLearnMoreMenu] = useState(false);
 
   const handleLessonGenerated = (lesson, images) => {
     console.log('App.js - handleLessonGenerated called with images:', Object.keys(images));
@@ -34,27 +35,60 @@ function App() {
   return (
     <div className="min-h-screen">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <header className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-6 py-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="bg-gradient-to-br from-primary-500 to-indigo-600 p-2 rounded-lg">
-                <BookOpen className="w-8 h-8 text-white" />
+            {/* Left: Logo */}
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-lg">D</span>
               </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">AI Lesson Generator</h1>
-                <p className="text-sm text-gray-500">Powered by Gemini & Imagen</p>
-              </div>
+              <span className="text-lg font-semibold text-gray-900">DoodlePad</span>
             </div>
-            {currentLesson && (
+
+            {/* Center: Navigation */}
+            <div className="flex items-center gap-2">
+              {/* Create - Always visible and highlighted */}
               <button
                 onClick={handleNewLesson}
-                className="btn-secondary flex items-center gap-2"
+                className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-900 bg-gray-100 rounded-lg transition-colors"
               >
                 <Sparkles className="w-4 h-4" />
-                New Lesson
+                <span>Create</span>
               </button>
-            )}
+
+              {/* Learn more - Dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowLearnMoreMenu(!showLearnMoreMenu)}
+                  onBlur={() => setTimeout(() => setShowLearnMoreMenu(false), 200)}
+                  className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                >
+                  <HelpCircle className="w-4 h-4" />
+                  <span>Learn more</span>
+                  <ChevronDown className="w-4 h-4" />
+                </button>
+
+                {/* Dropdown Menu */}
+                {showLearnMoreMenu && (
+                  <div className="absolute top-full mt-2 right-0 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                    <button className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                      How it Works
+                    </button>
+                    <button className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                      Pricing
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Right: Login/Sign Up */}
+            <div>
+              <button className="px-4 py-2 bg-gradient-to-r from-emerald-400 to-teal-500 text-white text-sm font-medium rounded-lg hover:from-emerald-500 hover:to-teal-600 transition-all">
+                Login / Sign Up
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -89,9 +123,9 @@ function App() {
 
       {/* Footer */}
       <footer className="bg-white border-t border-gray-200 mt-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="max-w-7xl mx-auto px-6 py-6">
           <p className="text-center text-gray-500 text-sm">
-            Built with React, Flask, Gemini AI, and Imagen (Nano Banana)
+            Built with ❤️ using React, Flask, Gemini AI & Imagen
           </p>
         </div>
       </footer>
