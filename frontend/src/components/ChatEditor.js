@@ -4,10 +4,10 @@ import { editLesson } from '../api';
 
 function ChatEditor({ lessonId, onLessonUpdated, isMobile = false }) {
   const [messages, setMessages] = useState([
-    {
-      role: 'assistant',
-      content: '👋 Hi! I\'m your Doodlepad Agent. I can help you with:\n\n📝 **Text Edits:**\n• "Make the introduction longer"\n• "Rewrite everything in Batman theme"\n• "Add more examples to key concepts"\n\n🖼️ **Image Edits:**\n• "Make the intro image suitable for grade 5 kid"\n• "Change all images to cartoon style"\n• "Add an image to the summary section"\n• "Remove all images"\n\n➕ **Structure Changes:**\n• "Add a new section called \'Real World Examples\'"\n• "Add a \'Household Example\' section with an image"\n• "Remove the activities section"\n\nJust tell me what you want to change!'
-    }
+    // {
+    //   role: 'assistant',
+    //   content: '👋 Hi! I\'m your Doodlepad Agent. I can help you with:\n\n📝 **Text Edits:**\n• "Make the introduction longer"\n• "Rewrite everything in Batman theme"\n• "Add more examples to key concepts"\n\n🖼️ **Image Edits:**\n• "Make the intro image suitable for grade 5 kid"\n• "Change all images to cartoon style"\n• "Add an image to the summary section"\n• "Remove all images"\n\n➕ **Structure Changes:**\n• "Add a new section called \'Real World Examples\'"\n• "Add a \'Household Example\' section with an image"\n• "Remove the activities section"\n\nJust tell me what you want to change!'
+    // }
   ]);
   const [input, setInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -86,7 +86,7 @@ function ChatEditor({ lessonId, onLessonUpdated, isMobile = false }) {
   const quickActions = [
     'Make intro image suitable for grade 5 kid',
     'Rewrite in Batman theme',
-    'Change all images to cartoon style',
+    'Change the intro image to cartoon style',
     'Make introduction longer'
   ];
 
@@ -105,7 +105,7 @@ function ChatEditor({ lessonId, onLessonUpdated, isMobile = false }) {
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-gradient-to-r from-emerald-400 to-teal-500">
               <div className="flex items-center gap-2">
                 <MessageCircle className="w-5 h-5 text-white" />
-                <h3 className="font-semibold text-white">Edit Chat</h3>
+                <h3 className="font-semibold text-white">Doodlepad Agent</h3>
               </div>
               <button
                 onClick={() => setShowChatWindow(false)}
@@ -147,7 +147,7 @@ function ChatEditor({ lessonId, onLessonUpdated, isMobile = false }) {
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Type your edit request..."
+                placeholder="How can I help you?"
                 disabled={isProcessing}
                 className="flex-1 px-3 py-2.5 text-sm border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent disabled:opacity-50"
               />
@@ -178,8 +178,8 @@ function ChatEditor({ lessonId, onLessonUpdated, isMobile = false }) {
           <MessageCircle className="w-5 h-5 text-white" />
         </div>
         <div>
-          <h3 className="font-semibold text-gray-900">Edit Lesson</h3>
-          <p className="text-xs text-gray-500">Chat to modify the lesson</p>
+          <h3 className="font-semibold text-gray-900">Doodlepad Agent</h3>
+          <p className="text-xs text-gray-500">How can I help you?</p>
         </div>
       </div>
 
@@ -228,7 +228,7 @@ function ChatEditor({ lessonId, onLessonUpdated, isMobile = false }) {
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Type your edit request..."
+            placeholder="How can I help you?"
             disabled={isProcessing}
             className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent disabled:opacity-50"
           />
