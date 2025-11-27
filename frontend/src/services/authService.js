@@ -1,4 +1,9 @@
-import { signInWithPopup, signOut as firebaseSignOut } from 'firebase/auth';
+import { 
+  signInWithPopup, 
+  signInWithRedirect,
+  getRedirectResult,
+  signOut as firebaseSignOut 
+} from 'firebase/auth';
 import { auth, googleProvider } from '../config/firebase';
 import axios from 'axios';
 
@@ -7,6 +12,7 @@ class AuthService {
     this.currentUser = null;
     this.token = null;
     this.listeners = [];
+    this.useRedirect = false; // Try popup first, fallback to redirect
   }
 
   /**
@@ -14,7 +20,30 @@ class AuthService {
    */
   async signInWithGoogle() {
     try {
-      const result = await signInWithPopup(auth, googleProvider);
+      let result;
+      
+      if (this.useRedirect) {
+        // Use redirect method (more reliable but redirects page)
+        await signInWithRedirect(auth, googleProvider);
+        return; // Will redirect, so return early
+      } else {
+        // Try popup method first
+        try {
+          result = await signInWithPopup(auth, googleProvider);
+        } catch (popupError) {
+          // If popup fails (blocked), fallback to redirect
+          if (popupError.code === 'auth/popup-blocked' || 
+              popupError.code === 'auth/popup-closed-by-user' ||
+              popupError.code === 'auth/cancelled-popup-request') {
+            console.log('Popup blocked, using redirect instead');
+            this.useRedirect = true;
+            await signInWithRedirect(auth, googleProvider);
+            return;
+          }
+          throw popupError;
+        }
+      }
+      
       const user = result.user;
       
       // Get Firebase ID token
@@ -35,6 +64,32 @@ class AuthService {
       console.error('Error signing in with Google:', error);
       throw error;
     }
+  }
+  
+  /**
+   * Handle redirect result after sign-in redirect
+   */
+  async handleRedirectResult() {
+    try {
+      const result = await getRedirectResult(auth);
+      if (result && result.user) {
+        const user = result.user;
+        const token = await user.getIdToken();
+        this.token = token;
+        
+        // Verify token with backend
+        const response = await axios.post('/api/auth/verify', { token });
+        
+        if (response.data.success) {
+          this.currentUser = response.data.user;
+          this.notifyListeners();
+          return this.currentUser;
+        }
+      }
+    } catch (error) {
+      console.error('Error handling redirect result:', error);
+    }
+    return null;
   }
 
   /**

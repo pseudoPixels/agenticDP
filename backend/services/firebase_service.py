@@ -4,11 +4,13 @@ Handles user authentication and CRUD operations for resources
 """
 
 import firebase_admin
-from firebase_admin import credentials, firestore, auth
+from firebase_admin import credentials, firestore, auth, storage
 from datetime import datetime
 from typing import Dict, List, Optional, Any
 import os
 import json
+import base64
+import uuid
 
 class FirebaseService:
     _instance = None
@@ -62,8 +64,25 @@ class FirebaseService:
                     }
                     cred = credentials.Certificate(cred_dict)
                 
-                firebase_admin.initialize_app(cred)
+                # Get project ID for storage bucket
+                project_id = cred_dict.get('project_id') if not cred_path else None
+                if not project_id and cred_path:
+                    # Try to get from credentials file
+                    import json
+                    with open(cred_path) as f:
+                        cred_data = json.load(f)
+                        project_id = cred_data.get('project_id')
+                
+                # Initialize with storage bucket
+                if project_id:
+                    firebase_admin.initialize_app(cred, {
+                        'storageBucket': f'{project_id}.appspot.com'
+                    })
+                else:
+                    firebase_admin.initialize_app(cred)
+                
                 self.db = firestore.client()
+                self.bucket = storage.bucket() if project_id else None
                 self.enabled = True
                 print("✓ Firebase initialized successfully")
             except Exception as e:
@@ -113,6 +132,53 @@ class FirebaseService:
         else:
             return user_doc.to_dict()
     
+    # ==================== Image Storage ====================
+    
+    def upload_image(self, image_data: str, resource_id: str, image_key: str) -> str:
+        """
+        Upload base64 image to Firebase Storage
+        Returns the public URL
+        """
+        if not self.enabled or not self.bucket:
+            raise Exception("Firebase Storage not enabled")
+        
+        try:
+            # Remove data:image prefix if present
+            if ',' in image_data:
+                image_data = image_data.split(',')[1]
+            
+            # Decode base64
+            image_bytes = base64.b64decode(image_data)
+            
+            # Create unique filename
+            filename = f"resources/{resource_id}/{image_key}.png"
+            
+            # Upload to storage
+            blob = self.bucket.blob(filename)
+            blob.upload_from_string(image_bytes, content_type='image/png')
+            
+            # Make public and get URL
+            blob.make_public()
+            return blob.public_url
+        except Exception as e:
+            print(f"Error uploading image: {e}")
+            raise
+    
+    def upload_images(self, images: Dict, resource_id: str) -> Dict:
+        """
+        Upload multiple images and return URLs
+        """
+        image_urls = {}
+        for key, image_data in images.items():
+            if image_data:
+                try:
+                    url = self.upload_image(image_data, resource_id, key)
+                    image_urls[key] = url
+                except Exception as e:
+                    print(f"Failed to upload image {key}: {e}")
+                    image_urls[key] = None
+        return image_urls
+    
     # ==================== Resource Management ====================
     
     def save_resource(self, user_id: str, resource_data: Dict) -> str:
@@ -120,8 +186,21 @@ class FirebaseService:
         Save a resource (lesson, worksheet, etc.) for a user
         Returns the resource ID
         """
+        if not self.enabled:
+            raise Exception("Firebase is not enabled")
+        
         resource_ref = self.db.collection('resources').document()
         resource_id = resource_ref.id
+        
+        # Upload images to Firebase Storage and get URLs
+        if 'images' in resource_data and resource_data['images']:
+            print(f"Uploading {len(resource_data['images'])} images to Firebase Storage...")
+            image_urls = self.upload_images(resource_data['images'], resource_id)
+            resource_data['images'] = image_urls  # Replace base64 with URLs
+        
+        # Convert content to JSON string if it's too complex
+        if 'content' in resource_data and isinstance(resource_data['content'], dict):
+            resource_data['content'] = json.dumps(resource_data['content'])
         
         resource_data.update({
             'id': resource_id,
@@ -132,6 +211,7 @@ class FirebaseService:
         })
         
         resource_ref.set(resource_data)
+        print(f"✓ Resource saved with {len(resource_data.get('images', {}))} images")
         return resource_id
     
     def get_resource(self, resource_id: str) -> Optional[Dict]:
@@ -140,7 +220,15 @@ class FirebaseService:
         resource_doc = resource_ref.get()
         
         if resource_doc.exists:
-            return resource_doc.to_dict()
+            data = resource_doc.to_dict()
+            # Parse content JSON string back to object
+            if 'content' in data and isinstance(data['content'], str):
+                try:
+                    data['content'] = json.loads(data['content'])
+                except:
+                    pass
+            # Images are already URLs, no need to parse
+            return data
         return None
     
     def update_resource(self, resource_id: str, updates: Dict) -> bool:
@@ -178,7 +266,18 @@ class FirebaseService:
         query = query.limit(limit).offset(offset)
         
         docs = query.stream()
-        return [doc.to_dict() for doc in docs]
+        resources = []
+        for doc in docs:
+            data = doc.to_dict()
+            # Parse content JSON string back to object
+            if 'content' in data and isinstance(data['content'], str):
+                try:
+                    data['content'] = json.loads(data['content'])
+                except:
+                    pass
+            # Images are already URLs, no need to parse
+            resources.append(data)
+        return resources
     
     # ==================== Student Management ====================
     

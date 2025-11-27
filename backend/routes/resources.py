@@ -76,6 +76,9 @@ def save_resource():
             'message': 'Resource saved successfully'
         })
     except Exception as e:
+        print(f"Error saving resource: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 

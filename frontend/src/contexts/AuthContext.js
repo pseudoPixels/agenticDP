@@ -18,6 +18,15 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Check for redirect result first (in case user was redirected back)
+    const checkRedirect = async () => {
+      const redirectUser = await authService.handleRedirectResult();
+      if (redirectUser) {
+        setUser(redirectUser);
+      }
+    };
+    checkRedirect();
+
     // Listen to Firebase auth state changes
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
@@ -26,9 +35,20 @@ export const AuthProvider = ({ children }) => {
           const token = await firebaseUser.getIdToken();
           authService.token = token;
           
-          // This will get or create the user in our backend
-          const userData = await authService.signInWithGoogle();
-          setUser(userData);
+          // Verify with backend
+          const response = await fetch('/api/auth/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token })
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success) {
+              authService.currentUser = data.user;
+              setUser(data.user);
+            }
+          }
         } catch (error) {
           console.error('Error verifying user:', error);
           setUser(null);
