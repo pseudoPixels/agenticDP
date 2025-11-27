@@ -35,7 +35,7 @@
   }
   
   .lesson-text {
-    @apply text-gray-600 leading-relaxed mb-4;
+    @apply text-gray-800 leading-relaxed mb-4;
   }
   
   .lesson-image {

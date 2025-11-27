@@ -27,29 +27,22 @@ function LessonViewer({ lesson, images }) {
   console.log('LessonViewer - images keys:', Object.keys(images || {}));
 
   return (
-    <div className="space-y-6">
-      {/* Title Section */}
-      <div className="lesson-card bg-gradient-to-br from-emerald-400 to-teal-500 text-white">
-        <div className="flex items-start gap-3 sm:gap-4">
-          <div className="bg-white/20 p-2 sm:p-3 rounded-lg">
-            <BookOpen className="w-6 h-6 sm:w-8 sm:h-8" />
-          </div>
-          <div className="flex-1">
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2">{lesson.title}</h1>
-            {lesson.subtitle && (
-              <p className="text-base sm:text-lg lg:text-xl text-white/90">{lesson.subtitle}</p>
-            )}
-            <div className="mt-3 sm:mt-4 flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-white/80">
-              <span>Version {lesson.version}</span>
-              <span>•</span>
-              <span>Topic: {lesson.topic}</span>
-            </div>
+    <div>
+      {/* Single unified lesson card - textbook style */}
+      <div className="lesson-card">
+        {/* Title Section - Textbook style */}
+        <div className="mb-8 pb-6 border-b border-gray-200">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2">{lesson.title}</h1>
+          {lesson.subtitle && (
+            <p className="text-base sm:text-lg lg:text-xl text-gray-600 mb-3">{lesson.subtitle}</p>
+          )}
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-500">
+            <span>Version {lesson.version}</span>
+            <span>•</span>
+            <span>Topic: {lesson.topic}</span>
           </div>
         </div>
-      </div>
 
-      {/* Continuous Lesson Content */}
-      <div className="lesson-card">
         {/* Introduction */}
         {lesson.introduction && (
           <div className="mb-8">
