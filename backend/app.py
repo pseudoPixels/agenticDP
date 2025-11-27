@@ -2,18 +2,26 @@ from flask import Flask, request, jsonify, Response, stream_with_context
 from flask_cors import CORS
 import os
 from dotenv import load_dotenv
-from agents import LessonGeneratorAgent, ImageGeneratorAgent, LessonEditorAgent
-from agents.agentic_editor import AgenticLessonEditor
 import uuid
 from typing import Dict, Any
 import json
 import time
 
-# Load environment variables
+# Load environment variables FIRST before importing anything that uses Firebase
 load_dotenv()
+
+# Now import routes and agents (after env vars are loaded)
+from agents import LessonGeneratorAgent, ImageGeneratorAgent, LessonEditorAgent
+from agents.agentic_editor import AgenticLessonEditor
+from routes.resources import resources_bp
+from routes.students import students_bp
 
 app = Flask(__name__)
 CORS(app)
+
+# Register blueprints
+app.register_blueprint(resources_bp, url_prefix='/api')
+app.register_blueprint(students_bp, url_prefix='/api')
 
 # Initialize agents
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')

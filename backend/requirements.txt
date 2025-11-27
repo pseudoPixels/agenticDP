@@ -23,5 +23,8 @@ pydantic-core==2.41.5
 python-dotenv==1.0.0
 tenacity==9.1.2
 
+# Firebase
+firebase-admin==6.2.0
+
 # Production Server (optional, for deployment)
 gunicorn==21.2.0

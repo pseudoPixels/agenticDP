@@ -1,0 +1,229 @@
+import React, { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Plus, Library, Settings as SettingsIcon, LogOut, Menu, X, User } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+
+function Header() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { user, isAuthenticated, signIn, signOut } = useAuth();
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+
+  const handleAuthClick = async () => {
+    if (isAuthenticated) {
+      setShowUserMenu(!showUserMenu);
+    } else {
+      try {
+        await signIn();
+      } catch (error) {
+        console.error('Sign in failed:', error);
+      }
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      setShowUserMenu(false);
+      navigate('/');
+    } catch (error) {
+      console.error('Sign out failed:', error);
+    }
+  };
+
+  const isActive = (path) => location.pathname === path;
+
+  return (
+    <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3">
+        <div className="flex items-center justify-between">
+          {/* Left: Logo */}
+          <button
+            onClick={() => navigate('/')}
+            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+          >
+            <div className="w-8 h-8 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-lg">D</span>
+            </div>
+            <span className="text-base sm:text-lg font-semibold text-gray-900">DoodlePad</span>
+          </button>
+
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center gap-2">
+            <button
+              onClick={() => navigate('/')}
+              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-colors ${
+                isActive('/')
+                  ? 'text-emerald-600 bg-emerald-50'
+                  : 'text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              <Plus className="w-4 h-4" />
+              Create
+            </button>
+
+            {isAuthenticated && (
+              <>
+                <button
+                  onClick={() => navigate('/library')}
+                  className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-colors ${
+                    isActive('/library')
+                      ? 'text-emerald-600 bg-emerald-50'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <Library className="w-4 h-4" />
+                  Library
+                </button>
+
+                <button
+                  onClick={() => navigate('/settings')}
+                  className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-colors ${
+                    isActive('/settings')
+                      ? 'text-emerald-600 bg-emerald-50'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <SettingsIcon className="w-4 h-4" />
+                  Settings
+                </button>
+              </>
+            )}
+          </div>
+
+          {/* Right: Auth & Mobile Menu */}
+          <div className="flex items-center gap-2">
+            {/* User Menu - Desktop */}
+            {isAuthenticated ? (
+              <div className="hidden sm:block relative">
+                <button
+                  onClick={handleAuthClick}
+                  onBlur={() => setTimeout(() => setShowUserMenu(false), 200)}
+                  className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-gradient-to-r from-emerald-400 to-teal-500 text-white text-xs sm:text-sm font-medium rounded-lg hover:from-emerald-500 hover:to-teal-600 transition-all"
+                >
+                  {user?.picture ? (
+                    <img src={user.picture} alt={user.name} className="w-6 h-6 rounded-full" />
+                  ) : (
+                    <User className="w-4 h-4" />
+                  )}
+                  <span className="hidden sm:inline">{user?.name || 'Account'}</span>
+                </button>
+
+                {showUserMenu && (
+                  <div className="absolute top-full mt-2 right-0 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                    <div className="px-4 py-2 border-b border-gray-200">
+                      <p className="text-sm font-medium text-gray-900">{user?.name}</p>
+                      <p className="text-xs text-gray-600 truncate">{user?.email}</p>
+                    </div>
+                    <button
+                      onClick={handleSignOut}
+                      className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Sign Out
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <button
+                onClick={handleAuthClick}
+                className="hidden sm:block px-3 sm:px-4 py-2 bg-gradient-to-r from-emerald-400 to-teal-500 text-white text-xs sm:text-sm font-medium rounded-lg hover:from-emerald-500 hover:to-teal-600 transition-all"
+              >
+                Login / Sign Up
+              </button>
+            )}
+
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setShowMobileMenu(!showMobileMenu)}
+              className="md:hidden p-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              {showMobileMenu ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Menu */}
+        {showMobileMenu && (
+          <div className="md:hidden mt-4 pb-4 border-t border-gray-200 pt-4 space-y-2">
+            <button
+              onClick={() => {
+                navigate('/');
+                setShowMobileMenu(false);
+              }}
+              className={`w-full flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-colors ${
+                isActive('/') ? 'text-emerald-600 bg-emerald-50' : 'text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              <Plus className="w-4 h-4" />
+              Create
+            </button>
+
+            {isAuthenticated && (
+              <>
+                <button
+                  onClick={() => {
+                    navigate('/library');
+                    setShowMobileMenu(false);
+                  }}
+                  className={`w-full flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-colors ${
+                    isActive('/library') ? 'text-emerald-600 bg-emerald-50' : 'text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <Library className="w-4 h-4" />
+                  Library
+                </button>
+
+                <button
+                  onClick={() => {
+                    navigate('/settings');
+                    setShowMobileMenu(false);
+                  }}
+                  className={`w-full flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-colors ${
+                    isActive('/settings') ? 'text-emerald-600 bg-emerald-50' : 'text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <SettingsIcon className="w-4 h-4" />
+                  Settings
+                </button>
+
+                <div className="border-t border-gray-200 pt-2 mt-2">
+                  <div className="px-4 py-2">
+                    <p className="text-sm font-medium text-gray-900">{user?.name}</p>
+                    <p className="text-xs text-gray-600 truncate">{user?.email}</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      handleSignOut();
+                      setShowMobileMenu(false);
+                    }}
+                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Sign Out
+                  </button>
+                </div>
+              </>
+            )}
+
+            {!isAuthenticated && (
+              <button
+                onClick={() => {
+                  handleAuthClick();
+                  setShowMobileMenu(false);
+                }}
+                className="sm:hidden w-full px-4 py-2.5 bg-gradient-to-r from-emerald-400 to-teal-500 text-white text-sm font-medium rounded-lg hover:from-emerald-500 hover:to-teal-600 transition-all"
+              >
+                Login / Sign Up
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    </header>
+  );
+}
+
+export default Header;

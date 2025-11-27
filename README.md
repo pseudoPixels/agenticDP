@@ -232,10 +232,19 @@ Updated Lesson
 - Implement authentication for the API endpoints
 - Add rate limiting to prevent abuse
 
+## ✅ New Features (Recently Added)
+
+- [x] **Firebase Authentication** - Google Sign-In integration
+- [x] **Resource Management** - Save, edit, and delete lessons
+- [x] **Library System** - Browse saved resources by type
+- [x] **Student Management** - Add and manage students
+- [x] **Assignment System** - Assign resources to students
+- [x] **Modular Architecture** - Easy to add new resource types
+
+See [SETUP_GUIDE.md](./SETUP_GUIDE.md) for detailed Firebase setup instructions.
+
 ## 🚧 Future Enhancements
 
-- [ ] Database integration (PostgreSQL/MongoDB)
-- [ ] User authentication and lesson saving
 - [ ] Export lessons to PDF/HTML
 - [ ] Multiple language support
 - [ ] Collaborative editing
@@ -243,6 +252,9 @@ Updated Lesson
 - [ ] Advanced image editing options
 - [ ] Voice narration for lessons
 - [ ] Quiz generation from lesson content
+- [ ] Worksheet generator
+- [ ] Presentation creator
+- [ ] Progress tracking for students
 
 ## 📄 License
 
