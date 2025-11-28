@@ -13,9 +13,13 @@ function ChatEditor({ lessonId, onLessonUpdated, onProcessingChange, isMobile = 
   const [isProcessing, setIsProcessing] = useState(false);
   const [showChatWindow, setShowChatWindow] = useState(false);
   const messagesEndRef = useRef(null);
+  const chatContainerRef = useRef(null);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // Only scroll within the chat container, not the whole page
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
   };
 
   useEffect(() => {
@@ -199,7 +203,7 @@ function ChatEditor({ lessonId, onLessonUpdated, onProcessingChange, isMobile = 
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
+            <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
               {messages.map((message, index) => (
                 <div
                   key={index}
@@ -259,7 +263,7 @@ function ChatEditor({ lessonId, onLessonUpdated, onProcessingChange, isMobile = 
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto py-4 space-y-3">
+      <div ref={chatContainerRef} className="flex-1 overflow-y-auto py-4 space-y-3">
         {messages.map((message, index) => (
           <div
             key={index}
