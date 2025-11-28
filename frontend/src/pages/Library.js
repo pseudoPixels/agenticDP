@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, FileText, Presentation, GraduationCap, Trash2, UserPlus, Users } from 'lucide-react';
+import { BookOpen, FileText, Presentation, GraduationCap, Trash2, UserPlus, Users, Grid, List, Search, Calendar } from 'lucide-react';
 import resourceService from '../services/resourceService';
 import studentService from '../services/studentService';
 import AssignModal from '../components/AssignModal';
@@ -21,6 +21,9 @@ function Library() {
   const [loading, setLoading] = useState(true);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [selectedResource, setSelectedResource] = useState(null);
+  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState('newest'); // 'newest', 'oldest', 'title'
 
   useEffect(() => {
     loadResources();
@@ -125,6 +128,32 @@ function Library() {
     return names.join(', ');
   };
 
+  // Filter and sort resources
+  const filteredAndSortedResources = resources
+    .filter(resource => {
+      if (!searchQuery) return true;
+      const query = searchQuery.toLowerCase();
+      return (
+        resource.title?.toLowerCase().includes(query) ||
+        resource.content?.subtitle?.toLowerCase().includes(query) ||
+        resource.content?.topic?.toLowerCase().includes(query)
+      );
+    })
+    .sort((a, b) => {
+      if (sortBy === 'newest') {
+        const dateA = a.created_at?.toDate ? a.created_at.toDate() : new Date(a.created_at);
+        const dateB = b.created_at?.toDate ? b.created_at.toDate() : new Date(b.created_at);
+        return dateB - dateA;
+      } else if (sortBy === 'oldest') {
+        const dateA = a.created_at?.toDate ? a.created_at.toDate() : new Date(a.created_at);
+        const dateB = b.created_at?.toDate ? b.created_at.toDate() : new Date(b.created_at);
+        return dateA - dateB;
+      } else if (sortBy === 'title') {
+        return (a.title || '').localeCompare(b.title || '');
+      }
+      return 0;
+    });
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       {/* Header */}
@@ -134,15 +163,10 @@ function Library() {
             <div>
               <h1 className="text-2xl font-bold text-gray-900">My Library</h1>
               <p className="text-sm text-gray-600 mt-1">
-                {resources.length} resource{resources.length !== 1 ? 's' : ''}
+                {filteredAndSortedResources.length} resource{filteredAndSortedResources.length !== 1 ? 's' : ''}
+                {searchQuery && ` matching "${searchQuery}"`}
               </p>
             </div>
-            <button
-              onClick={() => navigate('/')}
-              className="btn-primary"
-            >
-              Create New
-            </button>
           </div>
         </div>
       </header>
@@ -172,29 +196,97 @@ function Library() {
         </div>
       </div>
 
+      {/* Toolbar - Search, Sort, View Toggle */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+            {/* Search */}
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search resources..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              />
+            </div>
+
+            {/* Sort and View Controls */}
+            <div className="flex items-center gap-3">
+              {/* Sort Dropdown */}
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-gray-500" />
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                >
+                  <option value="newest">Newest First</option>
+                  <option value="oldest">Oldest First</option>
+                  <option value="title">Title (A-Z)</option>
+                </select>
+              </div>
+
+              {/* View Toggle */}
+              <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={`p-2 rounded transition-colors ${
+                    viewMode === 'grid'
+                      ? 'bg-white text-emerald-600 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                  title="Grid view"
+                >
+                  <Grid className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`p-2 rounded transition-colors ${
+                    viewMode === 'list'
+                      ? 'bg-white text-emerald-600 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                  title="List view"
+                >
+                  <List className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <div className="loading-spinner w-12 h-12"></div>
           </div>
-        ) : resources.length === 0 ? (
+        ) : filteredAndSortedResources.length === 0 ? (
           <div className="text-center py-12">
             <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No resources yet</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              {searchQuery ? 'No resources found' : 'No resources yet'}
+            </h3>
             <p className="text-gray-600 mb-6">
-              Create your first {activeTab === 'all' ? 'resource' : activeTab} to get started
+              {searchQuery
+                ? `No resources match "${searchQuery}"`
+                : `Create your first ${activeTab === 'all' ? 'resource' : activeTab} to get started`}
             </p>
-            <button
-              onClick={() => navigate('/')}
-              className="btn-primary"
-            >
-              Create New Resource
-            </button>
+            {!searchQuery && (
+              <button
+                onClick={() => navigate('/')}
+                className="btn-primary"
+              >
+                Create New Resource
+              </button>
+            )}
           </div>
-        ) : (
+        ) : viewMode === 'grid' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {resources.map((resource) => (
+            {filteredAndSortedResources.map((resource) => (
               <div
                 key={resource.id}
                 className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow overflow-hidden"
@@ -248,6 +340,67 @@ function Library() {
                     <div className="text-xs text-gray-500">
                       Created {formatDate(resource.created_at)}
                     </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          /* List View */
+          <div className="space-y-3">
+            {filteredAndSortedResources.map((resource) => (
+              <div
+                key={resource.id}
+                className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow overflow-hidden"
+              >
+                <div className="flex items-center gap-4 p-4">
+                  {/* Icon */}
+                  <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-r from-emerald-400 to-teal-500 rounded-lg flex items-center justify-center text-white">
+                    {getResourceIcon(resource.resource_type)}
+                  </div>
+
+                  {/* Content */}
+                  <div 
+                    className="flex-1 cursor-pointer min-w-0"
+                    onClick={() => handleOpenResource(resource)}
+                  >
+                    <h3 className="font-semibold text-gray-900 truncate">
+                      {resource.title}
+                    </h3>
+                    <p className="text-sm text-gray-600 truncate">
+                      {resource.content?.subtitle || resource.content?.introduction?.text || 'No description'}
+                    </p>
+                  </div>
+
+                  {/* Metadata */}
+                  <div className="hidden md:flex items-center gap-6 text-sm text-gray-500">
+                    <div className="flex items-center gap-2">
+                      <Users className="w-4 h-4" />
+                      <span className="truncate max-w-[150px]">
+                        {getAssignedStudentNames(resource.assigned_students)}
+                      </span>
+                    </div>
+                    <div className="whitespace-nowrap">
+                      {formatDate(resource.created_at)}
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleAssign(resource)}
+                      className="text-emerald-600 hover:bg-emerald-50 p-2 rounded transition-colors"
+                      title="Assign to student"
+                    >
+                      <UserPlus className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(resource.id)}
+                      className="text-red-600 hover:bg-red-50 p-2 rounded transition-colors"
+                      title="Delete"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
               </div>

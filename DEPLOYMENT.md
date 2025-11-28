@@ -113,12 +113,17 @@ server {
     listen 80;
     server_name your-domain.com;
 
+    # IMPORTANT: Allow large image uploads (base64 images can be 2-3MB)
+    client_max_body_size 10M;
+
     location / {
         proxy_pass http://127.0.0.1:5000;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_read_timeout 120s;
+        proxy_connect_timeout 120s;
+        proxy_send_timeout 120s;
     }
 }
 ```
@@ -366,18 +371,28 @@ docker logs -f container_name
 
 ### Common Issues
 
-1. **CORS Errors**
+1. **413 Request Entity Too Large (Image Upload Fails)**
+   - **Cause**: Nginx blocks large requests by default
+   - **Fix**: Add to nginx config:
+   ```nginx
+   client_max_body_size 10M;
+   ```
+   - Then restart nginx: `sudo systemctl restart nginx`
+   - If using Firebase Storage, ensure bucket name is correct (`.firebasestorage.app` not `.appspot.com`)
+
+2. **CORS Errors**
    - Update `CORS(app, origins=['your-frontend-url'])` in `app.py`
 
-2. **API Key Not Working**
+3. **API Key Not Working**
    - Verify environment variable is set correctly
    - Check API key is valid in Google AI Studio
 
-3. **Timeout Errors**
+4. **Timeout Errors**
    - Increase gunicorn timeout: `--timeout 180`
+   - Increase nginx timeouts: `proxy_read_timeout 180s;`
    - Image generation can take 20-30 seconds
 
-4. **Memory Issues**
+5. **Memory Issues**
    - Increase server RAM to at least 1GB
    - Reduce number of workers if needed
 
