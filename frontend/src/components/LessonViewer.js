@@ -45,7 +45,7 @@ function FloatingImage({ src, alt }) {
   );
 }
 
-function LessonViewer({ lesson, images }) {
+function LessonViewer({ lesson, images, isProcessing = false }) {
   if (!lesson) return null;
 
   console.log('LessonViewer - lesson:', lesson);
@@ -55,7 +55,7 @@ function LessonViewer({ lesson, images }) {
   return (
     <div>
       {/* Single unified lesson card - textbook style */}
-      <div className="lesson-card">
+      <div className={`lesson-card ${isProcessing ? 'processing' : ''}`}>
         {/* Title Section - Textbook style */}
         <div className="mb-8 pb-6 border-b border-gray-200">
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2">{lesson.title}</h1>

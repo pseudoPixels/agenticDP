@@ -19,7 +19,37 @@
 
 @layer components {
   .lesson-card {
-    @apply bg-white rounded-xl shadow-lg p-6 mb-6 animate-fade-in;
+    @apply bg-white rounded-xl shadow-lg p-6 mb-6 animate-fade-in relative;
+    border: 3px solid transparent;
+  }
+  
+  .lesson-card.processing {
+    background: linear-gradient(white, white) padding-box,
+                linear-gradient(135deg, #10b981, #3b82f6, #8b5cf6, #ec4899, #10b981) border-box;
+    animation: glow-border 3s ease-in-out infinite;
+  }
+  
+  @keyframes glow-border {
+    0%, 100% {
+      box-shadow: 0 0 20px rgba(16, 185, 129, 0.3),
+                  0 0 40px rgba(16, 185, 129, 0.2),
+                  0 0 60px rgba(16, 185, 129, 0.1);
+    }
+    25% {
+      box-shadow: 0 0 20px rgba(59, 130, 246, 0.3),
+                  0 0 40px rgba(59, 130, 246, 0.2),
+                  0 0 60px rgba(59, 130, 246, 0.1);
+    }
+    50% {
+      box-shadow: 0 0 20px rgba(139, 92, 246, 0.3),
+                  0 0 40px rgba(139, 92, 246, 0.2),
+                  0 0 60px rgba(139, 92, 246, 0.1);
+    }
+    75% {
+      box-shadow: 0 0 20px rgba(236, 72, 153, 0.3),
+                  0 0 40px rgba(236, 72, 153, 0.2),
+                  0 0 60px rgba(236, 72, 153, 0.1);
+    }
   }
   
   .lesson-section {

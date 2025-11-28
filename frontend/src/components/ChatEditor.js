@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { MessageCircle, Send, Loader2 } from 'lucide-react';
 import { editLesson } from '../api';
 
-function ChatEditor({ lessonId, onLessonUpdated, isMobile = false }) {
+function ChatEditor({ lessonId, onLessonUpdated, onProcessingChange, isMobile = false }) {
   const [messages, setMessages] = useState([
     // {
     //   role: 'assistant',
@@ -40,46 +40,95 @@ function ChatEditor({ lessonId, onLessonUpdated, isMobile = false }) {
     // Add user message
     setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
     setIsProcessing(true);
+    if (onProcessingChange) onProcessingChange(true);
+
+    // Add initial processing message
+    const processingMessageId = Date.now();
+    setMessages(prev => [
+      ...prev,
+      {
+        role: 'assistant',
+        content: '🤖 Starting...',
+        id: processingMessageId,
+        isProcessing: true
+      }
+    ]);
 
     try {
-      // Call edit API
-      const response = await editLesson(lessonId, userMessage);
-      
-      console.log('Edit response:', response);
-      console.log('Updated images:', response.images);
-      
-      if (response.success) {
-        // Add assistant response
-        setMessages(prev => [
-          ...prev,
-          {
-            role: 'assistant',
-            content: response.message || 'Lesson updated successfully! The changes have been applied.'
-          }
-        ]);
+      // Call streaming edit API
+      const response = await fetch(`/api/edit-lesson/${lessonId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ request: userMessage }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to edit lesson');
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
         
-        // Update the lesson in parent component
-        onLessonUpdated(response.lesson, response.images);
-      } else {
-        setMessages(prev => [
-          ...prev,
-          {
-            role: 'assistant',
-            content: 'Sorry, I couldn\'t process that request. Please try rephrasing it.'
+        if (done) break;
+        
+        buffer += decoder.decode(value, { stream: true });
+        const messages = buffer.split('\n\n');
+        buffer = messages.pop() || '';
+        
+        for (const message of messages) {
+          const lines = message.split('\n');
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.slice(6));
+                
+                if (data.type === 'status') {
+                  // Update the processing message
+                  setMessages(prev => prev.map(msg => 
+                    msg.id === processingMessageId
+                      ? { ...msg, content: data.message }
+                      : msg
+                  ));
+                } else if (data.type === 'complete') {
+                  // Replace processing message with final message
+                  setMessages(prev => prev.map(msg => 
+                    msg.id === processingMessageId
+                      ? { ...msg, content: data.message, isProcessing: false }
+                      : msg
+                  ));
+                  
+                  // Update the lesson in parent component
+                  onLessonUpdated(data.lesson, data.images);
+                } else if (data.type === 'error') {
+                  setMessages(prev => prev.map(msg => 
+                    msg.id === processingMessageId
+                      ? { ...msg, content: `❌ ${data.message}`, isProcessing: false }
+                      : msg
+                  ));
+                }
+              } catch (e) {
+                console.error('Failed to parse SSE message:', e);
+              }
+            }
           }
-        ]);
+        }
       }
     } catch (error) {
       console.error('Error editing lesson:', error);
-      setMessages(prev => [
-        ...prev,
-        {
-          role: 'assistant',
-          content: 'An error occurred while processing your request. Please try again.'
-        }
-      ]);
+      setMessages(prev => prev.map(msg => 
+        msg.id === processingMessageId
+          ? { ...msg, content: '❌ An error occurred while processing your request. Please try again.', isProcessing: false }
+          : msg
+      ));
     } finally {
       setIsProcessing(false);
+      if (onProcessingChange) onProcessingChange(false);
     }
   };
 

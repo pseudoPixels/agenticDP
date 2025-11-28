@@ -14,6 +14,7 @@ function LessonView() {
   const [images, setImages] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     loadLesson();
@@ -49,6 +50,10 @@ function LessonView() {
   const handleLessonUpdated = (updatedLesson, updatedImages) => {
     setLesson(updatedLesson);
     setImages(updatedImages);
+  };
+  
+  const handleProcessingChange = (processing) => {
+    setIsProcessing(processing);
   };
 
   if (loading) {
@@ -87,7 +92,7 @@ function LessonView() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Lesson Content - 2/3 width */}
           <div className="lg:col-span-2">
-            <LessonViewer lesson={lesson} images={images} />
+            <LessonViewer lesson={lesson} images={images} isProcessing={isProcessing} />
           </div>
 
           {/* Chat Editor - 1/3 width */}
@@ -95,6 +100,7 @@ function LessonView() {
             <ChatEditor
               lessonId={lessonId}
               onLessonUpdated={handleLessonUpdated}
+              onProcessingChange={handleProcessingChange}
             />
           </div>
         </div>
@@ -104,7 +110,7 @@ function LessonView() {
       <main className="lg:hidden flex flex-col" style={{ height: 'calc(100vh - 9rem)' }}>
         {/* Lesson Content - Scrollable */}
         <div className="flex-1 overflow-y-auto px-4 py-4">
-          <LessonViewer lesson={lesson} images={images} />
+          <LessonViewer lesson={lesson} images={images} isProcessing={isProcessing} />
         </div>
 
         {/* Chat Editor - Fixed at bottom */}
@@ -112,6 +118,7 @@ function LessonView() {
           <ChatEditor
             lessonId={lessonId}
             onLessonUpdated={handleLessonUpdated}
+            onProcessingChange={handleProcessingChange}
             isMobile={true}
           />
         </div>
