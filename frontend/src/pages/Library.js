@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, FileText, Presentation, GraduationCap, Trash2, UserPlus, Users, Grid, List, Search, Calendar } from 'lucide-react';
+import { BookOpen, FileText, Presentation, GraduationCap, Trash2, UserPlus, UserCheck, UserX, Users, Grid, List, Search, Calendar, Loader2 } from 'lucide-react';
 import resourceService from '../services/resourceService';
 import studentService from '../services/studentService';
-import AssignModal from '../components/AssignModal';
+
+const DEFAULT_STUDENT_NAME = 'My Student';
 
 const RESOURCE_TYPES = [
   { id: 'all', label: 'All Resources', icon: BookOpen },
@@ -17,10 +18,9 @@ function Library() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('all');
   const [resources, setResources] = useState([]);
-  const [students, setStudents] = useState([]);
+  const [defaultStudentId, setDefaultStudentId] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [showAssignModal, setShowAssignModal] = useState(false);
-  const [selectedResource, setSelectedResource] = useState(null);
+  const [assigningResourceId, setAssigningResourceId] = useState(null);
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('newest'); // 'newest', 'oldest', 'title'
@@ -45,8 +45,20 @@ function Library() {
 
   const loadStudents = async () => {
     try {
+      // Get or create default student
       const response = await studentService.getUserStudents();
-      setStudents(response.students || []);
+      let student = response.students?.find(s => s.name === DEFAULT_STUDENT_NAME);
+      
+      if (!student) {
+        // Create default student
+        const createResponse = await studentService.addStudent({
+          name: DEFAULT_STUDENT_NAME,
+          grade: 'N/A'
+        });
+        student = createResponse.student;
+      }
+      
+      setDefaultStudentId(student.id);
     } catch (error) {
       console.error('Error loading students:', error);
     }
@@ -74,25 +86,28 @@ function Library() {
     // Add more resource type handlers as needed
   };
 
-  const handleAssign = (resource) => {
-    setSelectedResource(resource);
-    setShowAssignModal(true);
-  };
-
-  const handleAssignComplete = async (studentIds) => {
+  const handleToggleAssignment = async (resource) => {
+    if (!defaultStudentId) return;
+    
+    setAssigningResourceId(resource.id);
     try {
-      // Assign to selected students
-      for (const studentId of studentIds) {
-        await resourceService.assignToStudent(selectedResource.id, studentId);
+      const isAssigned = resource.assigned_students?.includes(defaultStudentId);
+      
+      if (isAssigned) {
+        // Unassign
+        await resourceService.unassignFromStudent(resource.id, defaultStudentId);
+      } else {
+        // Assign
+        await resourceService.assignToStudent(resource.id, defaultStudentId);
       }
       
       // Reload resources to update assignment info
       await loadResources();
-      setShowAssignModal(false);
-      setSelectedResource(null);
     } catch (error) {
-      console.error('Error assigning resource:', error);
-      alert('Failed to assign resource');
+      console.error('Error toggling assignment:', error);
+      alert('Failed to update assignment');
+    } finally {
+      setAssigningResourceId(null);
     }
   };
 
@@ -112,20 +127,8 @@ function Library() {
     });
   };
 
-  const getAssignedStudentNames = (assignedStudents) => {
-    if (!assignedStudents || assignedStudents.length === 0) return 'Not assigned';
-    
-    const names = assignedStudents
-      .map(studentId => {
-        const student = students.find(s => s.id === studentId);
-        return student?.name || 'Unknown';
-      })
-      .slice(0, 2);
-    
-    if (assignedStudents.length > 2) {
-      return `${names.join(', ')} +${assignedStudents.length - 2} more`;
-    }
-    return names.join(', ');
+  const isResourceAssigned = (resource) => {
+    return resource.assigned_students?.includes(defaultStudentId);
   };
 
   // Filter and sort resources
@@ -302,14 +305,27 @@ function Library() {
                     </div>
                     <div className="flex gap-2">
                       <button
-                        onClick={() => handleAssign(resource)}
-                        className="text-white hover:bg-white/20 p-1 rounded transition-colors"
-                        title="Assign to student"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleAssignment(resource);
+                        }}
+                        disabled={assigningResourceId === resource.id}
+                        className="text-white hover:bg-white/20 p-1 rounded transition-colors disabled:opacity-50"
+                        title={isResourceAssigned(resource) ? "Unassign from student" : "Assign to student"}
                       >
-                        <UserPlus className="w-4 h-4" />
+                        {assigningResourceId === resource.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : isResourceAssigned(resource) ? (
+                          <UserCheck className="w-4 h-4" />
+                        ) : (
+                          <UserPlus className="w-4 h-4" />
+                        )}
                       </button>
                       <button
-                        onClick={() => handleDelete(resource.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(resource.id);
+                        }}
                         className="text-white hover:bg-white/20 p-1 rounded transition-colors"
                         title="Delete"
                       >
@@ -333,10 +349,19 @@ function Library() {
                   
                   {/* Metadata */}
                   <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-xs text-gray-500">
-                      <Users className="w-3 h-3" />
-                      <span>{getAssignedStudentNames(resource.assigned_students)}</span>
-                    </div>
+                    {isResourceAssigned(resource) ? (
+                      <div className="flex items-center gap-2 text-xs">
+                        <div className="flex items-center gap-1 px-2 py-1 bg-emerald-50 text-emerald-700 rounded-full">
+                          <UserCheck className="w-3 h-3" />
+                          <span className="font-medium">Assigned</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 text-xs text-gray-400">
+                        <UserX className="w-3 h-3" />
+                        <span>Not assigned</span>
+                      </div>
+                    )}
                     <div className="text-xs text-gray-500">
                       Created {formatDate(resource.created_at)}
                     </div>
@@ -373,14 +398,19 @@ function Library() {
                   </div>
 
                   {/* Metadata */}
-                  <div className="hidden md:flex items-center gap-6 text-sm text-gray-500">
-                    <div className="flex items-center gap-2">
-                      <Users className="w-4 h-4" />
-                      <span className="truncate max-w-[150px]">
-                        {getAssignedStudentNames(resource.assigned_students)}
-                      </span>
-                    </div>
-                    <div className="whitespace-nowrap">
+                  <div className="hidden md:flex items-center gap-6 text-sm">
+                    {isResourceAssigned(resource) ? (
+                      <div className="flex items-center gap-1 px-2 py-1 bg-emerald-50 text-emerald-700 rounded-full text-xs">
+                        <UserCheck className="w-3 h-3" />
+                        <span className="font-medium">Assigned</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1 text-gray-400 text-xs">
+                        <UserX className="w-3 h-3" />
+                        <span>Not assigned</span>
+                      </div>
+                    )}
+                    <div className="whitespace-nowrap text-gray-500 text-xs">
                       {formatDate(resource.created_at)}
                     </div>
                   </div>
@@ -388,14 +418,27 @@ function Library() {
                   {/* Actions */}
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => handleAssign(resource)}
-                      className="text-emerald-600 hover:bg-emerald-50 p-2 rounded transition-colors"
-                      title="Assign to student"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleToggleAssignment(resource);
+                      }}
+                      disabled={assigningResourceId === resource.id}
+                      className="text-emerald-600 hover:bg-emerald-50 p-2 rounded transition-colors disabled:opacity-50"
+                      title={isResourceAssigned(resource) ? "Unassign from student" : "Assign to student"}
                     >
-                      <UserPlus className="w-4 h-4" />
+                      {assigningResourceId === resource.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : isResourceAssigned(resource) ? (
+                        <UserCheck className="w-4 h-4" />
+                      ) : (
+                        <UserPlus className="w-4 h-4" />
+                      )}
                     </button>
                     <button
-                      onClick={() => handleDelete(resource.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(resource.id);
+                      }}
                       className="text-red-600 hover:bg-red-50 p-2 rounded transition-colors"
                       title="Delete"
                     >
@@ -408,19 +451,6 @@ function Library() {
           </div>
         )}
       </main>
-
-      {/* Assign Modal */}
-      {showAssignModal && (
-        <AssignModal
-          resource={selectedResource}
-          students={students}
-          onClose={() => {
-            setShowAssignModal(false);
-            setSelectedResource(null);
-          }}
-          onAssign={handleAssignComplete}
-        />
-      )}
     </div>
   );
 }

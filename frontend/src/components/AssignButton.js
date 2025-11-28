@@ -1,30 +1,58 @@
 import React, { useState, useEffect } from 'react';
-import { UserPlus } from 'lucide-react';
+import { UserCheck, UserPlus, Loader2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import studentService from '../services/studentService';
-import AssignModal from './AssignModal';
+import resourceService from '../services/resourceService';
 
-function AssignButton({ lesson, resourceId }) {
+const DEFAULT_STUDENT_NAME = 'My Student';
+
+function AssignButton({ lesson, resourceId, onAssignmentChange }) {
   const { isAuthenticated, signIn } = useAuth();
-  const [showModal, setShowModal] = useState(false);
-  const [students, setStudents] = useState([]);
+  const [isAssigned, setIsAssigned] = useState(false);
+  const [assignedDate, setAssignedDate] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [defaultStudentId, setDefaultStudentId] = useState(null);
 
   useEffect(() => {
     if (isAuthenticated) {
-      loadStudents();
+      checkAssignmentStatus();
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, resourceId]);
 
-  const loadStudents = async () => {
+  const checkAssignmentStatus = async () => {
     try {
+      // Get or create default student
       const response = await studentService.getUserStudents();
-      setStudents(response.students || []);
+      let student = response.students?.find(s => s.name === DEFAULT_STUDENT_NAME);
+      
+      if (!student) {
+        // Create default student
+        const createResponse = await studentService.addStudent({
+          name: DEFAULT_STUDENT_NAME,
+          grade: 'N/A'
+        });
+        student = createResponse.student;
+      }
+      
+      setDefaultStudentId(student.id);
+      
+      // Check if resource is assigned
+      const resourceResponse = await resourceService.getResource(resourceId);
+      if (resourceResponse.success) {
+        const assignedStudents = resourceResponse.resource.assigned_students || [];
+        const isCurrentlyAssigned = assignedStudents.includes(student.id);
+        setIsAssigned(isCurrentlyAssigned);
+        
+        if (isCurrentlyAssigned && resourceResponse.resource.assigned_at) {
+          setAssignedDate(resourceResponse.resource.assigned_at);
+        }
+      }
     } catch (error) {
-      console.error('Error loading students:', error);
+      console.error('Error checking assignment status:', error);
     }
   };
 
-  const handleClick = async () => {
+  const handleToggleAssignment = async () => {
     if (!isAuthenticated) {
       try {
         await signIn();
@@ -34,39 +62,51 @@ function AssignButton({ lesson, resourceId }) {
       }
     }
 
-    setShowModal(true);
-  };
-
-  const handleAssign = async (studentIds) => {
-    // Assignment logic is handled in the modal
-    setShowModal(false);
-  };
-
-  const resource = {
-    id: resourceId,
-    title: lesson?.title || 'Untitled Lesson',
-    assigned_students: []
+    setLoading(true);
+    try {
+      if (isAssigned) {
+        // Unassign
+        await resourceService.unassignFromStudent(resourceId, defaultStudentId);
+        setIsAssigned(false);
+        setAssignedDate(null);
+      } else {
+        // Assign
+        await resourceService.assignToStudent(resourceId, defaultStudentId);
+        setIsAssigned(true);
+        setAssignedDate(new Date());
+      }
+      
+      // Notify parent component
+      if (onAssignmentChange) {
+        onAssignmentChange(isAssigned);
+      }
+    } catch (error) {
+      console.error('Error toggling assignment:', error);
+      alert('Failed to update assignment');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <>
-      <button
-        onClick={handleClick}
-        className="flex items-center gap-2 px-4 py-2 bg-white border-2 border-emerald-400 text-emerald-600 hover:bg-emerald-50 rounded-lg font-semibold transition-all"
-      >
+    <button
+      onClick={handleToggleAssignment}
+      disabled={loading}
+      className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all ${
+        isAssigned
+          ? 'bg-emerald-500 text-white hover:bg-emerald-600'
+          : 'bg-white border-2 border-emerald-400 text-emerald-600 hover:bg-emerald-50'
+      } disabled:opacity-50 disabled:cursor-not-allowed`}
+    >
+      {loading ? (
+        <Loader2 className="w-4 h-4 animate-spin" />
+      ) : isAssigned ? (
+        <UserCheck className="w-4 h-4" />
+      ) : (
         <UserPlus className="w-4 h-4" />
-        Assign to Student
-      </button>
-
-      {showModal && (
-        <AssignModal
-          resource={resource}
-          students={students}
-          onClose={() => setShowModal(false)}
-          onAssign={handleAssign}
-        />
       )}
-    </>
+      {isAssigned ? 'Assigned to Student' : 'Assign to Student'}
+    </button>
   );
 }
 

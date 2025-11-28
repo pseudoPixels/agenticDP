@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Plus, Library, Settings as SettingsIcon, LogOut, Menu, X, User } from 'lucide-react';
+import { Plus, Library, LogOut, Menu, X, User } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 function Header() {
@@ -64,31 +64,17 @@ function Header() {
             </button>
 
             {isAuthenticated && (
-              <>
-                <button
-                  onClick={() => navigate('/library')}
-                  className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-colors ${
-                    isActive('/library')
-                      ? 'text-emerald-600 bg-emerald-50'
-                      : 'text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  <Library className="w-4 h-4" />
-                  Library
-                </button>
-
-                <button
-                  onClick={() => navigate('/settings')}
-                  className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-colors ${
-                    isActive('/settings')
-                      ? 'text-emerald-600 bg-emerald-50'
-                      : 'text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  <SettingsIcon className="w-4 h-4" />
-                  Settings
-                </button>
-              </>
+              <button
+                onClick={() => navigate('/library')}
+                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-colors ${
+                  isActive('/library')
+                    ? 'text-emerald-600 bg-emerald-50'
+                    : 'text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <Library className="w-4 h-4" />
+                Library
+              </button>
             )}
           </div>
 
@@ -174,19 +160,6 @@ function Header() {
                 >
                   <Library className="w-4 h-4" />
                   Library
-                </button>
-
-                <button
-                  onClick={() => {
-                    navigate('/settings');
-                    setShowMobileMenu(false);
-                  }}
-                  className={`w-full flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-colors ${
-                    isActive('/settings') ? 'text-emerald-600 bg-emerald-50' : 'text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  <SettingsIcon className="w-4 h-4" />
-                  Settings
                 </button>
 
                 <div className="border-t border-gray-200 pt-2 mt-2">
