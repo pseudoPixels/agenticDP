@@ -10,6 +10,7 @@ function Home() {
   const [lessonImages, setLessonImages] = useState({});
   const [isGenerating, setIsGenerating] = useState(false);
   const [savedResourceId, setSavedResourceId] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const handleLessonGenerated = (lesson, images) => {
     console.log('Home - handleLessonGenerated called with images:', Object.keys(images));
@@ -25,6 +26,10 @@ function Home() {
   const handleLessonUpdated = (updatedLesson, updatedImages) => {
     setCurrentLesson(updatedLesson);
     setLessonImages(updatedImages);
+  };
+  
+  const handleProcessingChange = (processing) => {
+    setIsProcessing(processing);
   };
 
   const handleSaved = (resourceId) => {
@@ -68,7 +73,7 @@ function Home() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Lesson Content - 2/3 width */}
               <div className="lg:col-span-2">
-                <LessonViewer lesson={currentLesson} images={lessonImages} />
+                <LessonViewer lesson={currentLesson} images={lessonImages} isProcessing={isProcessing} />
               </div>
 
               {/* Chat Editor - 1/3 width */}
@@ -76,6 +81,7 @@ function Home() {
                 <ChatEditor
                   lessonId={currentLesson.id}
                   onLessonUpdated={handleLessonUpdated}
+                  onProcessingChange={handleProcessingChange}
                 />
               </div>
             </div>
@@ -85,7 +91,7 @@ function Home() {
           <main className="lg:hidden flex flex-col" style={{ height: 'calc(100vh - 9rem)' }}>
             {/* Lesson Content - Scrollable */}
             <div className="flex-1 overflow-y-auto px-4 py-4">
-              <LessonViewer lesson={currentLesson} images={lessonImages} />
+              <LessonViewer lesson={currentLesson} images={lessonImages} isProcessing={isProcessing} />
             </div>
 
             {/* Chat Editor - Fixed at bottom */}
@@ -93,6 +99,7 @@ function Home() {
               <ChatEditor
                 lessonId={currentLesson.id}
                 onLessonUpdated={handleLessonUpdated}
+                onProcessingChange={handleProcessingChange}
                 isMobile={true}
               />
             </div>

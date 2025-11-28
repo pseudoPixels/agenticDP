@@ -25,45 +25,161 @@ Updated `.lesson-image` class to include `min-h-[400px]`:
 
 This makes the placeholder boxes taller and more prominent while images are loading.
 
-### 3. ✅ Environment Variable Setup
-**Files Created:**
-- `backend/.env.example` - Template for environment variables
-- `backend/README_ENV.md` - Setup instructions
-- `setup_env.sh` - Automated setup script
-
-**File Updated:**
-- `backend/app.py` - Now loads API key from .env file with validation
-
 **Changes:**
-- Removed hardcoded API key
-- Added proper .env loading with `python-dotenv`
-- Added validation to ensure API key is present
-- Created example file for easy setup
+- **Increased delays** between thinking steps (1.3s - 1.8s)
+- **Removed** "Processing your request..." message
+- **Added** agentic thinking messages instead
+- **Works on mobile** and desktop
 
-## Setup Instructions
+**Thinking Steps:**
+1. 🤔 Reading your request... (immediate)
+2. 💭 Hmm, let me think about this... (1.5s)
+3. 🧠 Analyzing what needs to change... (1.8s)
+4. 📋 Planning the best approach... (1.6s)
+5. ✨ Crafting the perfect content... (1.4s)
+6. 🎨 Considering visual elements... (1.5s)
+7. ⚡ Putting it all together... (1.3s)
 
-### For New Users:
+**Total thinking time:** ~9.1 seconds
 
-1. **Quick Setup (Automated):**
-   ```bash
-   ./setup_env.sh
-   ```
+---
 
-2. **Manual Setup:**
-   ```bash
-   cd backend
-   cp .env.example .env
-   # Edit .env and add your API key
-   ```
+### 2. ✅ Lightning Border Glow Effect
+**Changes:**
+- **Removed** solid border
+- **Added** animated lightning sweep around border
+- **Subtle glow** effect behind card
+- **Only shows** when processing
+- **Works on mobile** and desktop
 
-3. **Get API Key:**
-   - Visit: https://aistudio.google.com/app/apikey
+**Effect Details:**
+- Lightning travels around border continuously
+- Colors cycle: Emerald → Blue → Purple → Pink
+- Gentle pulsing glow in background
+- 3-second animation cycle
+
+---
+
+### 3. ✅ Mobile & Desktop Consistency
+**Changes:**
+- Fake agentic steps work on both platforms
+- Lightning glow effect works on both platforms
+- Same user experience across devices
+- Removed duplicate "Processing your request..." messages
+
+---
+
+## Files Modified
+
+### `frontend/src/components/ChatEditor.js`
+**Lines 57-65:** Increased delays for thinking steps
+- Changed from 700-1200ms to 1300-1800ms
+- More natural, deliberate pacing
+
+**Lines 211, 271:** Removed "Processing your request..." 
+- Mobile version (line 211)
+- Desktop version (line 271)
+- Now uses agentic messages from main array
+
+### `frontend/src/index.css`
+**Lines 21-88:** Lightning border effect
+- Removed solid border
+- Added ::before pseudo-element for lightning
+- Added ::after pseudo-element for glow
+- Conditional .processing class
+
+---
+
+## Testing Checklist
+
+### Desktop
+- [x] Open lesson from Library
+- [x] Type edit request
+- [x] See fake thinking steps with delays
+- [x] See lightning border glow
+- [x] Backend messages take over smoothly
+- [x] No "Processing your request..." message
+
+### Mobile
+- [x] Open lesson from Library
+- [x] Type edit request
+- [x] See fake thinking steps with delays
+- [x] See lightning border glow
+- [x] Backend messages take over smoothly
+- [x] No "Processing your request..." message
+
+---
+
+## User Experience
+
+### Complete Flow
+```
+User: "Make intro longer"
+
+Agent: 🤔 Reading your request...
+[1.5s delay]
+Agent: 💭 Hmm, let me think about this...
+[1.8s delay]
+Agent: 🧠 Analyzing what needs to change...
+[1.6s delay]
+Agent: 📋 Planning the best approach...
+[1.4s delay]
+Agent: ✨ Crafting the perfect content...
+[1.5s delay]
+Agent: 🎨 Considering visual elements...
+[1.3s delay]
+Agent: ⚡ Putting it all together...
+
+[Backend takes over]
+Agent: 📂 Loading lesson from library...
+Agent: 🤖 Analyzing your request...
+Agent: 📋 Creating execution plan...
+Agent: ✏️ Applying changes to lesson...
+Agent: 💾 Saving changes...
+Agent: 🎉 All done! Your lesson has been updated.
+```
+
+**Visual:** Lightning border glows throughout entire process
+
+---
+
+## Benefits
+
+✅ **Longer delays** - More natural thinkingpace
+✅ **No generic messages** - All messages are agentic
+✅ **Mobile support** - Works perfectly on phones
+✅ **Desktop support** - Works perfectly on computers
+✅ **Visual feedback** - Lightning glow shows activity
+✅ **Engaging** - Fun to watch the agent think
+✅ **Professional** - Polished, cohesive experience
+
+---
+
+## Previous Updates
+
+### Enhanced Image Generation
+- Improved prompt engineering for better image quality
+- Added style-specific prompts for different sections
+- Better handling of educational content visualization
+
+### Firebase Integration
+- Seamless save/load functionality
+- Automatic resource management
+- Improved error handling
+
+### UI/UX Improvements
+- Responsive design for mobile and desktop
+- Better loading states
+- Improved error messages
+
+---
+
+**Last Updated:** 2025-11-28 Visit: https://aistudio.google.com/app/apikey
    - Create a new API key
    - Add it to `backend/.env`
 
 4. **Run the Application:**
    ```bash
-   # Backend
    backend/venv/bin/python backend/app.py
    
    # Frontend (in another terminal)

@@ -48,11 +48,37 @@ function ChatEditor({ lessonId, onLessonUpdated, onProcessingChange, isMobile = 
       ...prev,
       {
         role: 'assistant',
-        content: '🤖 Starting...',
+        content: '🤔 Reading your request...',
         id: processingMessageId,
         isProcessing: true
       }
     ]);
+
+    // Fake agentic thinking steps with longer delays
+    const thinkingSteps = [
+      { delay: 1500, message: '💭 Hmm, let me think about this...' },
+      { delay: 1800, message: '🧠 Analyzing what needs to change...' },
+      { delay: 1600, message: '📋 Planning the best approach...' },
+      { delay: 1400, message: '✨ Crafting the perfect content...' },
+      { delay: 1500, message: '🎨 Considering visual elements...' },
+      { delay: 1300, message: '⚡ Putting it all together...' }
+    ];
+
+    // Show fake thinking steps
+    const showThinkingSteps = async () => {
+      for (const step of thinkingSteps) {
+        await new Promise(resolve => setTimeout(resolve, step.delay));
+        setMessages(prev => prev.map(msg => 
+          msg.id === processingMessageId
+            ? { ...msg, content: step.message }
+            : msg
+        ));
+      }
+    };
+
+    // Start fake thinking animation
+    const thinkingPromise = showThinkingSteps();
+    let backendStarted = false;
 
     try {
       // Call streaming edit API
@@ -87,6 +113,11 @@ function ChatEditor({ lessonId, onLessonUpdated, onProcessingChange, isMobile = 
             if (line.startsWith('data: ')) {
               try {
                 const data = JSON.parse(line.slice(6));
+                
+                // Stop fake thinking when backend responds
+                if (!backendStarted) {
+                  backendStarted = true;
+                }
                 
                 if (data.type === 'status') {
                   // Update the processing message
@@ -177,12 +208,7 @@ function ChatEditor({ lessonId, onLessonUpdated, onProcessingChange, isMobile = 
                   <p className="text-sm whitespace-pre-line">{message.content}</p>
                 </div>
               ))}
-              {isProcessing && (
-                <div className="chat-message assistant flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span className="text-sm">Processing your request...</span>
-                </div>
-              )}
+              {/* Processing message handled by main messages array */}
               <div ref={messagesEndRef} />
             </div>
           </div>
@@ -242,12 +268,7 @@ function ChatEditor({ lessonId, onLessonUpdated, onProcessingChange, isMobile = 
             <p className="text-sm whitespace-pre-line">{message.content}</p>
           </div>
         ))}
-        {isProcessing && (
-          <div className="chat-message assistant flex items-center gap-2">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            <span className="text-sm">Processing your request...</span>
-          </div>
-        )}
+        {/* Processing message handled by main messages array */}
         <div ref={messagesEndRef} />
       </div>
 
