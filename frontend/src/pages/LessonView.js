@@ -5,6 +5,7 @@ import LessonViewer from '../components/LessonViewer';
 import ChatEditor from '../components/ChatEditor';
 import AssignButton from '../components/AssignButton';
 import SaveButton from '../components/SaveButton';
+import DownloadButton from '../components/DownloadButton';
 import resourceService from '../services/resourceService';
 
 function LessonView() {
@@ -82,6 +83,7 @@ function LessonView() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <div className="flex flex-wrap items-center gap-3">
             <SaveButton lesson={lesson} images={images} resourceId={lessonId} />
+            <DownloadButton lesson={lesson} />
             <AssignButton lesson={lesson} resourceId={lessonId} />
           </div>
         </div>

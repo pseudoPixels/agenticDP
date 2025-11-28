@@ -4,6 +4,7 @@ import LessonViewer from '../components/LessonViewer';
 import ChatEditor from '../components/ChatEditor';
 import SaveButton from '../components/SaveButton';
 import AssignButton from '../components/AssignButton';
+import DownloadButton from '../components/DownloadButton';
 
 function Home() {
   const [currentLesson, setCurrentLesson] = useState(null);
@@ -58,6 +59,7 @@ function Home() {
                   images={lessonImages}
                   onSaved={handleSaved}
                 />
+                <DownloadButton lesson={currentLesson} />
                 {savedResourceId && (
                   <AssignButton
                     lesson={currentLesson}
