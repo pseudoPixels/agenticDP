@@ -15,6 +15,7 @@ from agents import LessonGeneratorAgent, ImageGeneratorAgent, LessonEditorAgent
 from agents.agentic_editor import AgenticLessonEditor
 from routes.resources import resources_bp
 from routes.students import students_bp
+from services.firebase_service import FirebaseService
 
 app = Flask(__name__)
 CORS(app)
@@ -32,6 +33,9 @@ lesson_generator = LessonGeneratorAgent(GEMINI_API_KEY)
 image_generator = ImageGeneratorAgent(GEMINI_API_KEY)
 lesson_editor = LessonEditorAgent(GEMINI_API_KEY)
 agentic_editor = AgenticLessonEditor(GEMINI_API_KEY)
+
+# Initialize Firebase service
+firebase_service = FirebaseService()
 
 # In-memory storage for lessons (in production, use a database)
 lessons_store: Dict[str, Dict[str, Any]] = {}
