@@ -254,6 +254,12 @@ class FirebaseService:
             'assigned_students': []  # List of student IDs
         })
         
+        # Ensure resource_type is set
+        if 'resource_type' not in resource_data:
+            print(f"WARNING: resource_type not provided, defaulting to 'lesson'")
+            resource_data['resource_type'] = 'lesson'
+        
+        print(f"Saving resource with type: {resource_data.get('resource_type')}")
         resource_ref.set(resource_data)
         print(f"✓ Resource saved: {resource_id}")
         return resource_id
@@ -303,27 +309,49 @@ class FirebaseService:
         """
         Get all resources for a user, optionally filtered by type
         Supports pagination
+        
+        Note: To avoid composite index requirement, we fetch all user resources
+        and filter by type in memory. This is fine for typical use cases.
         """
+        # Query only by user_id and order by created_at (single field index exists by default)
         query = self.db.collection('resources').where('user_id', '==', user_id)
-        
-        if resource_type:
-            query = query.where('resource_type', '==', resource_type)
-        
         query = query.order_by('created_at', direction=firestore.Query.DESCENDING)
-        query = query.limit(limit).offset(offset)
+        
+        # Fetch more than needed if filtering by type
+        fetch_limit = limit * 3 if resource_type else limit
+        query = query.limit(fetch_limit)
         
         docs = query.stream()
         resources = []
+        
         for doc in docs:
             data = doc.to_dict()
+            
+            # Debug: Check resource_type field
+            if 'resource_type' not in data:
+                print(f"WARNING: Resource {doc.id} missing resource_type field!")
+                # Set default to 'lesson' for backward compatibility
+                data['resource_type'] = 'lesson'
+            
+            # Filter by resource_type in memory if specified
+            if resource_type and data.get('resource_type') != resource_type:
+                continue
+            
             # Parse content JSON string back to object
             if 'content' in data and isinstance(data['content'], str):
                 try:
                     data['content'] = json.loads(data['content'])
                 except:
                     pass
+            
             # Images are already URLs, no need to parse
             resources.append(data)
+            
+            # Stop if we have enough resources
+            if len(resources) >= limit:
+                break
+        
+        print(f"Found {len(resources)} resources for user {user_id} (type filter: {resource_type})")
         return resources
     
     # ==================== Student Management ====================

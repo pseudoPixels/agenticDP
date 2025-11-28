@@ -255,8 +255,19 @@ def get_lesson(lesson_id):
 def edit_lesson(lesson_id):
     """Edit a lesson based on natural language instructions"""
     try:
+        # Check if lesson is in memory, if not, load from Firebase
         if lesson_id not in lessons_store:
-            return jsonify({"error": "Lesson not found"}), 404
+            # Try to load from Firebase
+            resource = firebase_service.get_resource(lesson_id)
+            if not resource:
+                return jsonify({"error": "Lesson not found"}), 404
+            
+            # Load into memory
+            lessons_store[lesson_id] = {
+                'data': resource.get('content', {}),
+                'images': resource.get('images', {}),
+                'image_generation_status': {}
+            }
         
         data = request.json
         edit_request = data.get('request')
@@ -309,6 +320,16 @@ def edit_lesson(lesson_id):
                 print(f"Image regenerated successfully for key: {key}", flush=True)
             else:
                 print(f"WARNING: Image regeneration failed for {section}", flush=True)
+        
+        # Save updated lesson back to Firebase
+        try:
+            firebase_service.update_resource(lesson_id, {
+                'content': updated_lesson,
+                'images': lesson_store['images']
+            })
+            print(f"Lesson {lesson_id} saved to Firebase successfully")
+        except Exception as e:
+            print(f"Warning: Failed to save lesson to Firebase: {e}")
         
         return jsonify({
             "success": True,

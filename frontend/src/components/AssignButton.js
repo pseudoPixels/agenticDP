@@ -9,15 +9,8 @@ const DEFAULT_STUDENT_NAME = 'My Student';
 function AssignButton({ lesson, resourceId, onAssignmentChange }) {
   const { isAuthenticated, signIn } = useAuth();
   const [isAssigned, setIsAssigned] = useState(false);
-  const [assignedDate, setAssignedDate] = useState(null);
   const [loading, setLoading] = useState(false);
   const [defaultStudentId, setDefaultStudentId] = useState(null);
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      checkAssignmentStatus();
-    }
-  }, [isAuthenticated, resourceId]);
 
   const checkAssignmentStatus = async () => {
     try {
@@ -42,15 +35,18 @@ function AssignButton({ lesson, resourceId, onAssignmentChange }) {
         const assignedStudents = resourceResponse.resource.assigned_students || [];
         const isCurrentlyAssigned = assignedStudents.includes(student.id);
         setIsAssigned(isCurrentlyAssigned);
-        
-        if (isCurrentlyAssigned && resourceResponse.resource.assigned_at) {
-          setAssignedDate(resourceResponse.resource.assigned_at);
-        }
       }
     } catch (error) {
       console.error('Error checking assignment status:', error);
     }
   };
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      checkAssignmentStatus();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, resourceId]);
 
   const handleToggleAssignment = async () => {
     if (!isAuthenticated) {
@@ -68,12 +64,10 @@ function AssignButton({ lesson, resourceId, onAssignmentChange }) {
         // Unassign
         await resourceService.unassignFromStudent(resourceId, defaultStudentId);
         setIsAssigned(false);
-        setAssignedDate(null);
       } else {
         // Assign
         await resourceService.assignToStudent(resourceId, defaultStudentId);
         setIsAssigned(true);
-        setAssignedDate(new Date());
       }
       
       // Notify parent component
