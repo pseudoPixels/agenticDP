@@ -23,9 +23,16 @@ function LessonView() {
       setLoading(true);
       const response = await resourceService.getResource(lessonId);
       
+      console.log('Loaded resource response:', response);
+      
       if (response.success) {
-        setLesson(response.resource.content);
-        setImages(response.resource.images || {});
+        const resourceData = response.resource;
+        console.log('Resource data:', resourceData);
+        console.log('Resource images:', resourceData.images);
+        console.log('Resource content:', resourceData.content);
+        
+        setLesson(resourceData.content);
+        setImages(resourceData.images || {});
       } else {
         setError('Failed to load lesson');
       }

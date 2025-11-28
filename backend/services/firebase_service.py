@@ -65,26 +65,52 @@ class FirebaseService:
                     cred = credentials.Certificate(cred_dict)
                 
                 # Get project ID for storage bucket
-                project_id = cred_dict.get('project_id') if not cred_path else None
-                if not project_id and cred_path:
-                    # Try to get from credentials file
+                project_id = None
+                if cred_path:
+                    # Get from credentials file
                     import json
                     with open(cred_path) as f:
                         cred_data = json.load(f)
                         project_id = cred_data.get('project_id')
+                else:
+                    # Get from environment variables
+                    project_id = cred_dict.get('project_id')
                 
                 # Initialize with storage bucket
                 if project_id:
+                    # Try new Firebase Storage bucket format first, fallback to old format
+                    storage_bucket = f'{project_id}.firebasestorage.app'
                     firebase_admin.initialize_app(cred, {
-                        'storageBucket': f'{project_id}.appspot.com'
+                        'storageBucket': storage_bucket
                     })
+                    print(f"✓ Firebase initialized with storage bucket: {storage_bucket}")
                 else:
                     firebase_admin.initialize_app(cred)
+                    print("⚠️  Firebase initialized without storage bucket (project_id not found)")
                 
                 self.db = firestore.client()
-                self.bucket = storage.bucket() if project_id else None
+                
+                # Try to get storage bucket and verify it exists
+                try:
+                    if project_id:
+                        self.bucket = storage.bucket()
+                        # Test if bucket actually exists by checking if we can access it
+                        try:
+                            self.bucket.exists()
+                            print(f"✓ Storage bucket connected: {self.bucket.name}")
+                        except Exception as e:
+                            print(f"⚠️  Storage bucket '{self.bucket.name}' does not exist: {e}")
+                            print(f"   Enable Firebase Storage at: https://console.firebase.google.com/project/{project_id}/storage")
+                            self.bucket = None
+                    else:
+                        self.bucket = None
+                        print("⚠️  Storage bucket not available (no project_id)")
+                except Exception as e:
+                    print(f"⚠️  Storage bucket error: {e}")
+                    print("   Make sure Firebase Storage is enabled in your Firebase Console")
+                    self.bucket = None
+                
                 self.enabled = True
-                print("✓ Firebase initialized successfully")
             except Exception as e:
                 print(f"⚠️  Firebase initialization failed: {str(e)}")
                 print("   Running without authentication/database")
@@ -167,16 +193,25 @@ class FirebaseService:
     def upload_images(self, images: Dict, resource_id: str) -> Dict:
         """
         Upload multiple images and return URLs
+        Raises exception if any upload fails
         """
         image_urls = {}
+        failed_uploads = []
+        
         for key, image_data in images.items():
             if image_data:
                 try:
                     url = self.upload_image(image_data, resource_id, key)
                     image_urls[key] = url
+                    print(f"  ✓ Uploaded {key}")
                 except Exception as e:
-                    print(f"Failed to upload image {key}: {e}")
-                    image_urls[key] = None
+                    print(f"  ✗ Failed to upload image {key}: {e}")
+                    failed_uploads.append(key)
+        
+        # If any uploads failed, raise exception to trigger fallback
+        if failed_uploads:
+            raise Exception(f"Failed to upload {len(failed_uploads)} images: {', '.join(failed_uploads)}")
+        
         return image_urls
     
     # ==================== Resource Management ====================
@@ -192,11 +227,20 @@ class FirebaseService:
         resource_ref = self.db.collection('resources').document()
         resource_id = resource_ref.id
         
-        # Upload images to Firebase Storage and get URLs
+        # Handle images - ALWAYS use Firebase Storage (required)
         if 'images' in resource_data and resource_data['images']:
+            if not self.bucket:
+                raise Exception(
+                    "Firebase Storage is required but not available. "
+                    "Please enable Firebase Storage in your Firebase Console: "
+                    f"https://console.firebase.google.com/project/{os.getenv('FIREBASE_PROJECT_ID', 'your-project')}/storage"
+                )
+            
+            # Upload to Firebase Storage
             print(f"Uploading {len(resource_data['images'])} images to Firebase Storage...")
             image_urls = self.upload_images(resource_data['images'], resource_id)
             resource_data['images'] = image_urls  # Replace base64 with URLs
+            print(f"✓ Images uploaded to Storage")
         
         # Convert content to JSON string if it's too complex
         if 'content' in resource_data and isinstance(resource_data['content'], dict):
@@ -211,7 +255,7 @@ class FirebaseService:
         })
         
         resource_ref.set(resource_data)
-        print(f"✓ Resource saved with {len(resource_data.get('images', {}))} images")
+        print(f"✓ Resource saved: {resource_id}")
         return resource_id
     
     def get_resource(self, resource_id: str) -> Optional[Dict]:
@@ -227,7 +271,10 @@ class FirebaseService:
                     data['content'] = json.loads(data['content'])
                 except:
                     pass
-            # Images are already URLs, no need to parse
+            
+            # Images are stored as URLs in Firebase Storage
+            # No need to load from separate collection anymore
+            
             return data
         return None
     

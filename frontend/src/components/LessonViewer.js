@@ -10,12 +10,38 @@ function ImagePlaceholder() {
 }
 
 function FloatingImage({ src, alt }) {
+  const [error, setError] = React.useState(false);
+  const [loading, setLoading] = React.useState(true);
+
+  if (!src) {
+    return <ImagePlaceholder />;
+  }
+
   return (
-    <img
-      src={src}
-      alt={alt}
-      className="float-right ml-6 mb-4 w-80 object-cover animate-fade-in"
-    />
+    <div className="float-right ml-6 mb-4 w-80">
+      {loading && !error && (
+        <div className="w-80 h-64 bg-gradient-to-br from-gray-100 to-gray-200 animate-pulse flex items-center justify-center">
+          <ImageIcon className="w-16 h-16 text-gray-400" />
+        </div>
+      )}
+      {error && (
+        <div className="w-80 h-64 bg-red-50 border border-red-200 flex flex-col items-center justify-center">
+          <ImageIcon className="w-16 h-16 text-red-400 mb-2" />
+          <p className="text-red-600 text-sm">Failed to load image</p>
+        </div>
+      )}
+      <img
+        src={src}
+        alt={alt}
+        className={`w-80 object-cover animate-fade-in ${loading || error ? 'hidden' : ''}`}
+        onLoad={() => setLoading(false)}
+        onError={(e) => {
+          console.error('Image load error:', src, e);
+          setError(true);
+          setLoading(false);
+        }}
+      />
+    </div>
   );
 }
 
