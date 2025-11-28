@@ -3,7 +3,7 @@ import { Save, Check, Loader2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import resourceService from '../services/resourceService';
 
-function SaveButton({ lesson, images, onSaved }) {
+function SaveButton({ lesson, images, resourceId, onSaved }) {
   const { isAuthenticated, signIn } = useAuth();
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -19,27 +19,36 @@ function SaveButton({ lesson, images, onSaved }) {
       }
     }
 
-    // Save the lesson
+    // Save or update the lesson
     try {
       setSaving(true);
       
-      const resourceData = {
-        resource_type: 'lesson',
-        title: lesson.title,
-        content: lesson,
-        images: images,
-        topic: lesson.topic,
-        version: lesson.version
-      };
+      if (resourceId) {
+        // Update existing resource
+        await resourceService.updateResource(resourceId, {
+          content: lesson,
+          images: images
+        });
+      } else {
+        // Create new resource
+        const resourceData = {
+          resource_type: 'lesson',
+          title: lesson.title,
+          content: lesson,
+          images: images,
+          topic: lesson.topic,
+          version: lesson.version
+        };
 
-      const response = await resourceService.saveResource(resourceData);
+        const response = await resourceService.saveResource(resourceData);
+        
+        if (onSaved) {
+          onSaved(response.resource_id);
+        }
+      }
       
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
-      
-      if (onSaved) {
-        onSaved(response.resource_id);
-      }
     } catch (error) {
       console.error('Error saving lesson:', error);
       alert('Failed to save lesson. Please try again.');

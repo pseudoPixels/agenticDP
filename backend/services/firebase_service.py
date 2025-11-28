@@ -287,9 +287,42 @@ class FirebaseService:
     def update_resource(self, resource_id: str, updates: Dict) -> bool:
         """Update a resource"""
         try:
+            # Handle images - check if any are base64 and need uploading
+            if 'images' in updates and updates['images']:
+                images_to_upload = {}
+                final_images = {}
+                
+                for key, value in updates['images'].items():
+                    if isinstance(value, str):
+                        # Check if it's base64 data (starts with data:image)
+                        if value.startswith('data:image'):
+                            images_to_upload[key] = value
+                        else:
+                            # Already a URL, keep it
+                            final_images[key] = value
+                    else:
+                        final_images[key] = value
+                
+                # Upload any base64 images to Storage
+                if images_to_upload:
+                    if not self.bucket:
+                        raise Exception("Firebase Storage is required for image updates")
+                    
+                    print(f"Uploading {len(images_to_upload)} new images to Firebase Storage...")
+                    uploaded_urls = self.upload_images(images_to_upload, resource_id)
+                    final_images.update(uploaded_urls)
+                    print(f"✓ Images uploaded to Storage")
+                
+                updates['images'] = final_images
+            
+            # Convert content to JSON string if needed
+            if 'content' in updates and isinstance(updates['content'], dict):
+                updates['content'] = json.dumps(updates['content'])
+            
             resource_ref = self.db.collection('resources').document(resource_id)
             updates['updated_at'] = datetime.utcnow()
             resource_ref.update(updates)
+            print(f"✓ Resource {resource_id} updated successfully")
             return True
         except Exception as e:
             print(f"Error updating resource: {e}")

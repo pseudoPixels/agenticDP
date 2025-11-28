@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import LessonViewer from '../components/LessonViewer';
 import ChatEditor from '../components/ChatEditor';
 import AssignButton from '../components/AssignButton';
+import SaveButton from '../components/SaveButton';
 import resourceService from '../services/resourceService';
 
 function LessonView() {
@@ -16,6 +17,7 @@ function LessonView() {
 
   useEffect(() => {
     loadLesson();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lessonId]);
 
   const loadLesson = async () => {
@@ -47,14 +49,6 @@ function LessonView() {
   const handleLessonUpdated = (updatedLesson, updatedImages) => {
     setLesson(updatedLesson);
     setImages(updatedImages);
-    
-    // Update the resource in the backend
-    resourceService.updateResource(lessonId, {
-      content: updatedLesson,
-      images: updatedImages
-    }).catch(error => {
-      console.error('Error updating resource:', error);
-    });
   };
 
   if (loading) {
@@ -82,13 +76,7 @@ function LessonView() {
       <div className="bg-white border-b border-gray-200 sticky top-[57px] z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <div className="flex flex-wrap items-center gap-3">
-            <button
-              onClick={() => navigate('/library')}
-              className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back to Library
-            </button>
+            <SaveButton lesson={lesson} images={images} resourceId={lessonId} />
             <AssignButton lesson={lesson} resourceId={lessonId} />
           </div>
         </div>
