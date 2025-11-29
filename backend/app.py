@@ -257,95 +257,113 @@ def get_lesson(lesson_id):
 
 @app.route('/api/edit-lesson/<lesson_id>', methods=['POST'])
 def edit_lesson(lesson_id):
-    """Edit a lesson based on natural language instructions"""
-    try:
-        # Check if lesson is in memory, if not, load from Firebase
-        if lesson_id not in lessons_store:
-            # Try to load from Firebase
-            resource = firebase_service.get_resource(lesson_id)
-            if not resource:
-                return jsonify({"error": "Lesson not found"}), 404
-            
-            # Load into memory
-            lessons_store[lesson_id] = {
-                'data': resource.get('content', {}),
-                'images': resource.get('images', {}),
-                'image_generation_status': {}
-            }
-        
-        data = request.json
-        edit_request = data.get('request')
-        
-        if not edit_request:
-            return jsonify({"error": "Edit request is required"}), 400
-        
-        lesson_store = lessons_store[lesson_id]
-        current_lesson = lesson_store['data']
-        
-        # Process the edit request using the agentic editor
-        print(f"Processing edit request with agentic editor: {edit_request}")
-        updated_lesson, image_sections = agentic_editor.process_edit_request(
-            current_lesson, 
-            edit_request
-        )
-        
-        print(f"Edit processed. Image sections to regenerate: {len(image_sections)}")
-        print(f"Image sections: {image_sections}")
-        
-        # Update the stored lesson
-        lesson_store['data'] = updated_lesson
-        
-        # Generate new images if needed
-        new_images = {}
-        for img_change in image_sections:
-            section = img_change['section']
-            index = img_change.get('index')
-            sub_index = img_change.get('sub_index')
-            prompt = img_change['prompt']
-            style = img_change.get('style', 'educational')
-            
-            print(f"Regenerating image for {section} (index: {index}, sub_index: {sub_index}, style: {style}): {prompt}", flush=True)
-            image_data = image_generator.generate_image(prompt, style)
-            
-            if image_data:
-                # Map section names to the correct key format used in frontend
-                if section == 'key_concepts' and index is not None:
-                    key = f"key_concept_{index}"
-                elif index is not None:
-                    key = f"{section}_{index}"
-                elif sub_index is not None:
-                    # Handle multiple images per section (e.g., introduction_0, introduction_1)
-                    key = f"{section}_{sub_index}"
-                else:
-                    key = section
-                
-                lesson_store['images'][key] = image_data
-                new_images[key] = image_data
-                print(f"Image regenerated successfully for key: {key}", flush=True)
-            else:
-                print(f"WARNING: Image regeneration failed for {section}", flush=True)
-        
-        # Save updated lesson back to Firebase
+    """Edit a lesson based on natural language instructions with streaming updates"""
+    # Extract request data BEFORE generator (inside request context)
+    data = request.json
+    edit_request = data.get('request') if data else None
+    
+    if not edit_request:
+        return jsonify({"error": "Edit request is required"}), 400
+    
+    def generate():
         try:
-            firebase_service.update_resource(lesson_id, {
-                'content': updated_lesson,
-                'images': lesson_store['images']
-            })
-            print(f"Lesson {lesson_id} saved to Firebase successfully")
+            # Step 1: Load lesson if not in memory
+            yield f"data: {json.dumps({'type': 'status', 'message': '📂 Loading lesson from library...'})}\n\n"
+            
+            if lesson_id not in lessons_store:
+                # Try to load from Firebase
+                resource = firebase_service.get_resource(lesson_id)
+                if not resource:
+                    yield f"data: {json.dumps({'type': 'error', 'message': 'Lesson not found'})}\n\n"
+                    return
+                
+                # Load into memory
+                lessons_store[lesson_id] = {
+                    'data': resource.get('content', {}),
+                    'images': resource.get('images', {}),
+                    'image_generation_status': {}
+                }
+            
+            lesson_store = lessons_store[lesson_id]
+            current_lesson = lesson_store['data']
+            
+            # Step 2: Analyze request
+            yield f"data: {json.dumps({'type': 'status', 'message': '🤖 Analyzing your request...'})}\n\n"
+            
+            # Process the edit request using the agentic editor
+            print(f"Processing edit request with agentic editor: {edit_request}")
+            updated_lesson, image_sections = agentic_editor.process_edit_request(
+                current_lesson, 
+                edit_request
+            )
+            
+            print(f"Edit processed. Image sections to regenerate: {len(image_sections)}")
+            print(f"Image sections: {image_sections}")
+            
+            # Step 3: Apply changes
+            yield f"data: {json.dumps({'type': 'status', 'message': '✏️ Applying changes to lesson...'})}\n\n"
+            
+            # Update the stored lesson
+            lesson_store['data'] = updated_lesson
+            
+            # Step 4: Generate new images if needed
+            new_images = {}
+            if image_sections:
+                yield f"data: {json.dumps({'type': 'status', 'message': f'🎨 Generating {len(image_sections)} new image(s)...'})}\n\n"
+                
+                for i, img_change in enumerate(image_sections):
+                    section = img_change['section']
+                    index = img_change.get('index')
+                    sub_index = img_change.get('sub_index')
+                    prompt = img_change['prompt']
+                    style = img_change.get('style', 'educational')
+                    
+                    yield f"data: {json.dumps({'type': 'status', 'message': f'🖼️ Generating image {i+1}/{len(image_sections)}...'})}\n\n"
+                    
+                    print(f"Regenerating image for {section} (index: {index}, sub_index: {sub_index}, style: {style}): {prompt}", flush=True)
+                    image_data = image_generator.generate_image(prompt, style)
+                    
+                    if image_data:
+                        # Map section names to the correct key format used in frontend
+                        if section == 'key_concepts' and index is not None:
+                            key = f"key_concept_{index}"
+                        elif index is not None:
+                            key = f"{section}_{index}"
+                        elif sub_index is not None:
+                            key = f"{section}_{sub_index}"
+                        else:
+                            key = section
+                        
+                        lesson_store['images'][key] = image_data
+                        new_images[key] = image_data
+                        print(f"Image regenerated successfully for key: {key}", flush=True)
+                        
+                        # Stream the new image
+                        yield f"data: {json.dumps({'type': 'image', 'key': key, 'image': image_data})}\n\n"
+                    else:
+                        print(f"WARNING: Image regeneration failed for {section}", flush=True)
+            
+            # Step 5: Save to Firebase
+            yield f"data: {json.dumps({'type': 'status', 'message': '💾 Saving changes...'})}\n\n"
+            
+            try:
+                firebase_service.update_resource(lesson_id, {
+                    'content': updated_lesson,
+                    'images': lesson_store['images']
+                })
+                print(f"Lesson {lesson_id} saved to Firebase successfully")
+            except Exception as e:
+                print(f"Warning: Failed to save lesson to Firebase: {e}")
+            
+            # Step 6: Complete
+            yield f"data: {json.dumps({'type': 'lesson', 'lesson': updated_lesson})}\n\n"
+            yield f"data: {json.dumps({'type': 'complete', 'message': '✅ Lesson updated successfully!'})}\n\n"
+            
         except Exception as e:
-            print(f"Warning: Failed to save lesson to Firebase: {e}")
-        
-        return jsonify({
-            "success": True,
-            "lesson": updated_lesson,
-            "images": lesson_store['images'],
-            "new_images": new_images,
-            "message": "Lesson updated successfully"
-        })
-        
-    except Exception as e:
-        print(f"Error in edit_lesson: {e}")
-        return jsonify({"error": str(e)}), 500
+            print(f"Error in edit_lesson: {e}")
+            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+    
+    return Response(generate(), mimetype='text/event-stream')
 
 @app.route('/api/lessons', methods=['GET'])
 def list_lessons():

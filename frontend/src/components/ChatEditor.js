@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MessageCircle, Send, Loader2 } from 'lucide-react';
-import { editLesson } from '../api';
 
 function ChatEditor({ lessonId, onLessonUpdated, onProcessingChange, isMobile = false }) {
   const [messages, setMessages] = useState([
@@ -52,40 +51,17 @@ function ChatEditor({ lessonId, onLessonUpdated, onProcessingChange, isMobile = 
       ...prev,
       {
         role: 'assistant',
-        content: '🤔 Reading your request...',
+        content: '⏳ Processing your request...',
         id: processingMessageId,
         isProcessing: true
       }
     ]);
 
-    // Fake agentic thinking steps with longer delays
-    const thinkingSteps = [
-      { delay: 1500, message: '💭 Hmm, let me think about this...' },
-      { delay: 1800, message: '🧠 Analyzing what needs to change...' },
-      { delay: 1600, message: '📋 Planning the best approach...' },
-      { delay: 1400, message: '✨ Crafting the perfect content...' },
-      { delay: 1500, message: '🎨 Considering visual elements...' },
-      { delay: 1300, message: '⚡ Putting it all together...' }
-    ];
-
-    // Show fake thinking steps
-    const showThinkingSteps = async () => {
-      for (const step of thinkingSteps) {
-        await new Promise(resolve => setTimeout(resolve, step.delay));
-        setMessages(prev => prev.map(msg => 
-          msg.id === processingMessageId
-            ? { ...msg, content: step.message }
-            : msg
-        ));
-      }
-    };
-
-    // Start fake thinking animation
-    const thinkingPromise = showThinkingSteps();
-    let backendStarted = false;
-
     try {
       // Call streaming edit API
+      console.log('Calling edit API with lessonId:', lessonId);
+      console.log('Edit request:', userMessage);
+      
       const response = await fetch(`/api/edit-lesson/${lessonId}`, {
         method: 'POST',
         headers: {
@@ -94,8 +70,13 @@ function ChatEditor({ lessonId, onLessonUpdated, onProcessingChange, isMobile = 
         body: JSON.stringify({ request: userMessage }),
       });
 
+      console.log('Response status:', response.status);
+      console.log('Response ok:', response.ok);
+
       if (!response.ok) {
-        throw new Error('Failed to edit lesson');
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
+        throw new Error(`Failed to edit lesson: ${response.status} - ${errorText}`);
       }
 
       const reader = response.body.getReader();
@@ -118,11 +99,6 @@ function ChatEditor({ lessonId, onLessonUpdated, onProcessingChange, isMobile = 
               try {
                 const data = JSON.parse(line.slice(6));
                 
-                // Stop fake thinking when backend responds
-                if (!backendStarted) {
-                  backendStarted = true;
-                }
-                
                 if (data.type === 'status') {
                   // Update the processing message
                   setMessages(prev => prev.map(msg => 
@@ -130,6 +106,22 @@ function ChatEditor({ lessonId, onLessonUpdated, onProcessingChange, isMobile = 
                       ? { ...msg, content: data.message }
                       : msg
                   ));
+                } else if (data.type === 'lesson') {
+                  // Received updated lesson - fetch full data with images
+                  console.log('Received updated lesson, fetching full data...');
+                  fetch(`/api/lesson/${lessonId}`)
+                    .then(res => res.json())
+                    .then(result => {
+                      if (result.success && onLessonUpdated) {
+                        console.log('Updating lesson with images');
+                        onLessonUpdated(result.lesson, result.images);
+                      }
+                    })
+                    .catch(err => console.error('Failed to fetch updated lesson:', err));
+                } else if (data.type === 'image') {
+                  // Handle new images as they come in
+                  console.log('Received new image:', data.key);
+                  // Images will be updated when lesson is fetched
                 } else if (data.type === 'complete') {
                   // Replace processing message with final message
                   setMessages(prev => prev.map(msg => 
@@ -137,9 +129,6 @@ function ChatEditor({ lessonId, onLessonUpdated, onProcessingChange, isMobile = 
                       ? { ...msg, content: data.message, isProcessing: false }
                       : msg
                   ));
-                  
-                  // Update the lesson in parent component
-                  onLessonUpdated(data.lesson, data.images);
                 } else if (data.type === 'error') {
                   setMessages(prev => prev.map(msg => 
                     msg.id === processingMessageId
