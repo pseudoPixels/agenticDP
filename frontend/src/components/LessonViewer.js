@@ -90,7 +90,7 @@ function LessonViewer({ lesson, images, isProcessing = false }) {
                 /* Handle single image */
                 lesson.introduction.image_prompt && (
                   images.introduction ? (
-                    <FloatingImage src={images.introduction} alt="Introduction" />
+                    <FloatingImage key={images.introduction} src={images.introduction} alt="Introduction" />
                   ) : (
                     <ImagePlaceholder />
                   )
@@ -114,7 +114,7 @@ function LessonViewer({ lesson, images, isProcessing = false }) {
                 <div className="clear-both">
                   {/* Show image if it exists for this concept */}
                   {concept.image_prompt && images[`key_concept_${index}`] && (
-                    <FloatingImage src={images[`key_concept_${index}`]} alt={concept.title} />
+                    <FloatingImage key={images[`key_concept_${index}`]} src={images[`key_concept_${index}`]} alt={concept.title} />
                   )}
                   <h3 className="text-xl font-semibold text-emerald-700 mb-2">
                     {concept.title}
@@ -139,7 +139,7 @@ function LessonViewer({ lesson, images, isProcessing = false }) {
                 <div className="clear-both">
                   {/* Show image if it exists for this section */}
                   {section.image_prompt && images[`detailed_content_${index}`] && (
-                    <FloatingImage src={images[`detailed_content_${index}`]} alt={section.heading} />
+                    <FloatingImage key={images[`detailed_content_${index}`]} src={images[`detailed_content_${index}`]} alt={section.heading} />
                   )}
                   <h3 className="lesson-subheading">{section.heading}</h3>
                   {section.paragraphs && section.paragraphs.map((paragraph, pIndex) => (
@@ -162,7 +162,7 @@ function LessonViewer({ lesson, images, isProcessing = false }) {
             <div className="clear-both">
               {/* Show image if it exists for activities */}
               {lesson.activities.image_prompt && images.activities && (
-                <FloatingImage src={images.activities} alt="Activities" />
+                <FloatingImage key={images.activities} src={images.activities} alt="Activities" />
               )}
               <div className="space-y-3">
                 {lesson.activities.items && lesson.activities.items.map((activity, index) => (
@@ -201,7 +201,7 @@ function LessonViewer({ lesson, images, isProcessing = false }) {
             <div className="clear-both">
               {/* Show image if it exists for summary */}
               {lesson.summary.image_prompt && images.summary && (
-                <FloatingImage src={images.summary} alt="Summary" />
+                <FloatingImage key={images.summary} src={images.summary} alt="Summary" />
               )}
               <p className="lesson-text font-medium text-gray-700">{lesson.summary.text}</p>
             </div>

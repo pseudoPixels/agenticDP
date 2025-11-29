@@ -240,16 +240,31 @@ def generate_images(lesson_id):
 def get_lesson(lesson_id):
     """Get a lesson by ID"""
     try:
-        if lesson_id not in lessons_store:
-            return jsonify({"error": "Lesson not found"}), 404
+        # First check if lesson is in memory
+        if lesson_id in lessons_store:
+            lesson_store = lessons_store[lesson_id]
+            return jsonify({
+                "success": True,
+                "lesson": lesson_store['data'],
+                "images": lesson_store['images']
+            })
         
-        lesson_store = lessons_store[lesson_id]
+        # If not in memory, try to load from Firebase
+        resource = firebase_service.get_resource(lesson_id)
+        if resource:
+            # Load into memory for future edits
+            lessons_store[lesson_id] = {
+                'data': resource.get('content', {}),
+                'images': resource.get('images', {}),
+                'image_generation_status': {}
+            }
+            return jsonify({
+                "success": True,
+                "lesson": resource.get('content', {}),
+                "images": resource.get('images', {})
+            })
         
-        return jsonify({
-            "success": True,
-            "lesson": lesson_store['data'],
-            "images": lesson_store['images']
-        })
+        return jsonify({"error": "Lesson not found"}), 404
         
     except Exception as e:
         print(f"Error in get_lesson: {e}")
@@ -352,6 +367,13 @@ def edit_lesson(lesson_id):
                     'images': lesson_store['images']
                 })
                 print(f"Lesson {lesson_id} saved to Firebase successfully")
+                
+                # Sync in-memory store with Firebase to get the uploaded URLs
+                # This ensures subsequent fetches get the correct image URLs
+                updated_resource = firebase_service.get_resource(lesson_id)
+                if updated_resource:
+                    lesson_store['images'] = updated_resource.get('images', {})
+                    print(f"In-memory store synced with Firebase URLs")
             except Exception as e:
                 print(f"Warning: Failed to save lesson to Firebase: {e}")
             

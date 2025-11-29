@@ -25,6 +25,14 @@ function SaveButton({ lesson, images, resourceId, onSaved }) {
       
       if (resourceId) {
         // Update existing resource
+        console.log('SaveButton: Saving resource', resourceId);
+        console.log('SaveButton: Images being saved:', Object.keys(images));
+        // Log first 100 chars of each image to see if they're URLs or base64
+        Object.entries(images).forEach(([key, value]) => {
+          if (typeof value === 'string') {
+            console.log(`SaveButton: Image ${key}:`, value.substring(0, 100));
+          }
+        });
         await resourceService.updateResource(resourceId, {
           content: lesson,
           images: images

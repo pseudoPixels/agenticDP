@@ -113,7 +113,13 @@ function ChatEditor({ lessonId, onLessonUpdated, onProcessingChange, isMobile = 
                     .then(res => res.json())
                     .then(result => {
                       if (result.success && onLessonUpdated) {
-                        console.log('Updating lesson with images');
+                        console.log('ChatEditor: Fetched lesson with images:', Object.keys(result.images));
+                        // Log first 100 chars of each image to see if they're URLs or base64
+                        Object.entries(result.images).forEach(([key, value]) => {
+                          if (typeof value === 'string') {
+                            console.log(`ChatEditor: Image ${key}:`, value.substring(0, 100));
+                          }
+                        });
                         onLessonUpdated(result.lesson, result.images);
                       }
                     })

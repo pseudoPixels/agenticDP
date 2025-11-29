@@ -163,7 +163,7 @@ class FirebaseService:
     def upload_image(self, image_data: str, resource_id: str, image_key: str) -> str:
         """
         Upload base64 image to Firebase Storage
-        Returns the public URL
+        Returns the public URL with cache-busting timestamp
         """
         if not self.enabled or not self.bucket:
             raise Exception("Firebase Storage not enabled")
@@ -183,9 +183,13 @@ class FirebaseService:
             blob = self.bucket.blob(filename)
             blob.upload_from_string(image_bytes, content_type='image/png')
             
-            # Make public and get URL
+            # Make public and get URL with cache-busting timestamp
             blob.make_public()
-            return blob.public_url
+            base_url = blob.public_url
+            # Add timestamp to bust browser cache
+            timestamp = int(datetime.utcnow().timestamp() * 1000)
+            cache_busted_url = f"{base_url}?t={timestamp}"
+            return cache_busted_url
         except Exception as e:
             print(f"Error uploading image: {e}")
             raise
@@ -292,13 +296,16 @@ class FirebaseService:
                 images_to_upload = {}
                 final_images = {}
                 
+                print(f"DEBUG: update_resource received {len(updates['images'])} images")
                 for key, value in updates['images'].items():
                     if isinstance(value, str):
                         # Check if it's base64 data (starts with data:image)
                         if value.startswith('data:image'):
+                            print(f"DEBUG: Image {key} is base64, will upload")
                             images_to_upload[key] = value
                         else:
                             # Already a URL, keep it
+                            print(f"DEBUG: Image {key} is URL: {value[:100]}")
                             final_images[key] = value
                     else:
                         final_images[key] = value
