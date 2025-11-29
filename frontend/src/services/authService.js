@@ -97,13 +97,37 @@ class AuthService {
    */
   async signOut() {
     try {
-      await firebaseSignOut(auth);
+      // Clear local state first (important for corrupted auth states)
       this.currentUser = null;
       this.token = null;
+      
+      // Try to sign out from Firebase
+      // Use a timeout to prevent hanging on network issues
+      const signOutPromise = firebaseSignOut(auth);
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Sign out timeout')), 5000)
+      );
+      
+      try {
+        await Promise.race([signOutPromise, timeoutPromise]);
+      } catch (firebaseError) {
+        // Log but don't throw - local state is already cleared
+        console.warn('Firebase sign out failed, but local state cleared:', firebaseError);
+      }
+      
+      // Clear any cached credentials
+      localStorage.removeItem('firebase:authUser');
+      sessionStorage.clear();
+      
+      // Notify listeners
       this.notifyListeners();
     } catch (error) {
       console.error('Error signing out:', error);
-      throw error;
+      // Still clear local state even if Firebase fails
+      this.currentUser = null;
+      this.token = null;
+      this.notifyListeners();
+      // Don't throw - allow logout to complete
     }
   }
 

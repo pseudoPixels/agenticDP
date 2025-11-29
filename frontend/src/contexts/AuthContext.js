@@ -89,7 +89,9 @@ export const AuthProvider = ({ children }) => {
       setUser(null);
     } catch (error) {
       console.error('Sign out error:', error);
-      throw error;
+      // Force clear user state even if sign out fails
+      setUser(null);
+      // Don't throw - allow UI to update
     }
   };
 
