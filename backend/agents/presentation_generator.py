@@ -167,28 +167,22 @@ Return ONLY the JSON, no markdown formatting or extra text."""
                 {
                     "type": "closing",
                     "title": "Thank You!",
-                    "content": "Questions?",
                     "image_prompt": "Thank you celebration image"
                 }
             ]
         }
     
     def create_pptx(self, presentation_data: Dict[str, Any], images: Dict[str, str]) -> io.BytesIO:
-        """Create a PPTX file from presentation data and images"""
+        """Create a PPTX file from presentation data and images - matching HTML exactly"""
         
-        # Load template or create blank presentation
-        template_path = self._select_random_template()
-        if template_path and os.path.exists(template_path):
-            print(f"Using template: {os.path.basename(template_path)}")
-            prs = Presentation(template_path)
-        else:
-            print("No template found, creating blank presentation")
-            prs = Presentation()
-        
-        # Get theme colors (use template colors or defaults)
-        primary_color = RGBColor(0, 128, 128)  # Teal
-        accent_color = RGBColor(255, 140, 0)   # Orange
-        text_color = RGBColor(51, 51, 51)      # Dark gray
+        # Create a blank presentation (no template)
+        prs = Presentation()
+        prs.slide_width = Inches(10)  # 16:9 aspect ratio
+        prs.slide_height = Inches(5.625)
+        # Define colors to match HTML
+        primary_color = RGBColor(16, 185, 129)  # emerald-500
+        accent_color = RGBColor(20, 184, 166)   # teal-500
+        text_color = RGBColor(17, 24, 39)       # gray-900
         
         # Create slides
         slides_data = presentation_data.get('slides', [])
@@ -238,152 +232,149 @@ Return ONLY the JSON, no markdown formatting or extra text."""
     # ---------- Slide Builders with Images (Using Template Layouts) ----------
     
     def _create_title_slide_with_image(self, prs, slide_info, image_data, primary_color, accent_color):
-        """Create title slide with educational image using template layout"""
-        # Use template's title slide layout (usually layout 0)
-        slide_layout = prs.slide_layouts[0] if len(prs.slide_layouts) > 0 else prs.slide_layouts[6]
-        slide = prs.slides.add_slide(slide_layout)
+        """Create title slide matching HTML - emerald to teal gradient"""
+        # Create blank slide
+        blank_layout = prs.slide_layouts[6]  # Blank layout
+        slide = prs.slides.add_slide(blank_layout)
+        
+        # Add gradient background (emerald to teal)
+        background = slide.background
+        fill = background.fill
+        fill.gradient()
+        fill.gradient_angle = 45
+        fill.gradient_stops[0].color.rgb = RGBColor(16, 185, 129)  # emerald-500
+        fill.gradient_stops[1].color.rgb = RGBColor(20, 184, 166)  # teal-500
 
         title_text = slide_info.get("title", "Title")
         content = slide_info.get("content", "")
         if isinstance(content, list):
             content = " | ".join(str(x) for x in content)
 
-        # Populate template placeholders
-        for shape in slide.shapes:
-            if shape.has_text_frame and shape.is_placeholder:
-                phf = shape.placeholder_format
-                if phf.type == 1:  # Title
-                    shape.text = title_text
-                    # Style the title
-                    for paragraph in shape.text_frame.paragraphs:
-                        for run in paragraph.runs:
-                            run.font.bold = True
-                            run.font.size = Pt(44)
-                elif phf.type == 2:  # Subtitle
-                    shape.text = str(content)
-                    for paragraph in shape.text_frame.paragraphs:
-                        for run in paragraph.runs:
-                            run.font.size = Pt(20)
+        # Add title - centered at top
+        title_box = slide.shapes.add_textbox(Inches(0.5), Inches(1.5), Inches(9), Inches(1))
+        title_frame = title_box.text_frame
+        title_frame.text = title_text
+        title_frame.paragraphs[0].alignment = PP_ALIGN.CENTER
+        title_frame.paragraphs[0].font.size = Pt(48)
+        title_frame.paragraphs[0].font.bold = True
+        title_frame.paragraphs[0].font.color.rgb = RGBColor(255, 255, 255)
 
-        # Add image if available
+        # Add subtitle if exists
+        if content:
+            subtitle_box = slide.shapes.add_textbox(Inches(0.5), Inches(2.7), Inches(9), Inches(0.6))
+            subtitle_frame = subtitle_box.text_frame
+            subtitle_frame.text = str(content)
+            subtitle_frame.paragraphs[0].alignment = PP_ALIGN.CENTER
+            subtitle_frame.paragraphs[0].font.size = Pt(24)
+            subtitle_frame.paragraphs[0].font.color.rgb = RGBColor(255, 255, 255)
+
+        # Add image at bottom if available
         if image_data:
             image_stream = self._base64_to_stream(image_data)
             if image_stream:
-                # Image at bottom center, well-spaced from text
-                left, top, width = Inches(1), Inches(0.5), Inches(6)
+                left, top, width = Inches(2.5), Inches(3.5), Inches(5)
                 slide.shapes.add_picture(image_stream, left, top, width=width)
                 print(f"      ✅ Image added to title slide")
 
     def _create_section_slide_with_image(self, prs, slide_info, image_data, primary_color, accent_color):
-        """Create section slide with educational image using template layout"""
-        # Use section header layout (usually layout 2)
-        slide_layout = prs.slide_layouts[2] if len(prs.slide_layouts) > 2 else prs.slide_layouts[1]
-        slide = prs.slides.add_slide(slide_layout)
+        """Create section slide matching HTML - blue to indigo gradient"""
+        blank_layout = prs.slide_layouts[6]
+        slide = prs.slides.add_slide(blank_layout)
+        
+        # Add gradient background (blue to indigo)
+        background = slide.background
+        fill = background.fill
+        fill.gradient()
+        fill.gradient_angle = 45
+        fill.gradient_stops[0].color.rgb = RGBColor(59, 130, 246)  # blue-500
+        fill.gradient_stops[1].color.rgb = RGBColor(99, 102, 241)  # indigo-500
 
         title_text = slide_info.get("title", "Section")
 
-        # Populate template placeholders
-        for shape in slide.shapes:
-            if shape.has_text_frame and shape.is_placeholder:
-                phf = shape.placeholder_format
-                if phf.type == 1:  # Title
-                    shape.text = title_text
-                    for paragraph in shape.text_frame.paragraphs:
-                        for run in paragraph.runs:
-                            run.font.bold = True
-                            run.font.size = Pt(40)
+        # Add title - centered
+        title_box = slide.shapes.add_textbox(Inches(0.5), Inches(1.5), Inches(9), Inches(1))
+        title_frame = title_box.text_frame
+        title_frame.text = title_text
+        title_frame.paragraphs[0].alignment = PP_ALIGN.CENTER
+        title_frame.paragraphs[0].font.size = Pt(48)
+        title_frame.paragraphs[0].font.bold = True
+        title_frame.paragraphs[0].font.color.rgb = RGBColor(255, 255, 255)
 
         # Add image if available
         if image_data:
             image_stream = self._base64_to_stream(image_data)
             if image_stream:
-                # Centered image with space from title
                 left, top, width = Inches(2.5), Inches(3), Inches(5)
                 slide.shapes.add_picture(image_stream, left, top, width=width)
                 print(f"      ✅ Image added to section slide")
 
     def _create_content_slide_with_image(self, prs, slide_info, image_data, primary_color, text_color, accent_color):
-        """Create content slide with text and educational image side by side using template"""
-        # Use content layout (usually layout 1)
-        slide_layout = prs.slide_layouts[1] if len(prs.slide_layouts) > 1 else prs.slide_layouts[0]
-        slide = prs.slides.add_slide(slide_layout)
+        """Create content slide matching HTML - white background with border"""
+        blank_layout = prs.slide_layouts[6]
+        slide = prs.slides.add_slide(blank_layout)
+        
+        # White background
+        background = slide.background
+        fill = background.fill
+        fill.solid()
+        fill.fore_color.rgb = RGBColor(255, 255, 255)
 
         title_text = slide_info.get("title", "Slide")
         content_items = slide_info.get("content", [])
         if not isinstance(content_items, list):
             content_items = [str(content_items)]
 
-        # Populate template placeholders
-        for shape in slide.shapes:
-            if shape.has_text_frame and shape.is_placeholder:
-                phf = shape.placeholder_format
-                if phf.type == 1:  # Title
-                    shape.text = title_text
-                    # Keep title at top with proper dimensions
-                    shape.top = Inches(0.3)
-                    shape.left = Inches(0.5)
-                    shape.width = Inches(9)
-                    shape.height = Inches(1)
+        # Add title
+        title_box = slide.shapes.add_textbox(Inches(0.5), Inches(0.5), Inches(9), Inches(0.8))
+        title_frame = title_box.text_frame
+        title_frame.text = title_text
+        title_frame.paragraphs[0].font.size = Pt(32)
+        title_frame.paragraphs[0].font.bold = True
+        title_frame.paragraphs[0].font.color.rgb = RGBColor(17, 24, 39)  # gray-900
 
-                    # Ensure horizontal text
-                    tf = shape.text_frame
-                    tf.word_wrap = True
+        # Add bullet points on left
+        content_box = slide.shapes.add_textbox(Inches(0.5), Inches(1.5), Inches(4.5), Inches(4))
+        content_frame = content_box.text_frame
+        content_frame.word_wrap = True
+        
+        for i, item in enumerate(content_items):
+            if i == 0:
+                p = content_frame.paragraphs[0]
+            else:
+                p = content_frame.add_paragraph()
+            p.text = f"• {str(item)}"
+            p.font.size = Pt(18)
+            p.font.color.rgb = RGBColor(55, 65, 81)  # gray-700
+            p.space_before = Pt(12)
 
-                    for paragraph in shape.text_frame.paragraphs:
-                        paragraph.alignment = PP_ALIGN.LEFT
-                        for run in paragraph.runs:
-                            run.font.bold = True
-                            run.font.size = Pt(32)
-
-                elif phf.type in [2, 7]:  # Body/Content
-                    # Position content below title on left side
-                    shape.left = Inches(0.5)
-                    shape.top = Inches(1.5)
-                    shape.width = Inches(4)
-                    shape.height = Inches(5.5)
-
-                    tf = shape.text_frame
-                    tf.word_wrap = True
-                    tf.clear()
-
-                    for i, item in enumerate(content_items):
-                        if i == 0:
-                            p = tf.paragraphs[0]
-                        else:
-                            p = tf.add_paragraph()
-                        p.text = f"• {str(item)}"
-                        p.level = 0
-                        p.font.size = Pt(16)
-                        p.space_before = Pt(8)
-                        p.alignment = PP_ALIGN.LEFT
-
-        # Add image if available
+        # Add image on right if available
         if image_data:
             image_stream = self._base64_to_stream(image_data)
             if image_stream:
-                # Image on right side, bigger and positioned below title
-                left, top, width = Inches(5.5), Inches(1), Inches(6)
+                left, top, width = Inches(5.5), Inches(1.5), Inches(4)
                 slide.shapes.add_picture(image_stream, left, top, width=width)
                 print(f"      ✅ Image added to content slide")
 
     def _create_chart_slide_with_image(self, prs, slide_info, image_data, primary_color, accent_color):
-        """Create chart slide with educational image using template"""
-        # Use content layout for chart
-        slide_layout = prs.slide_layouts[1] if len(prs.slide_layouts) > 1 else prs.slide_layouts[0]
-        slide = prs.slides.add_slide(slide_layout)
+        """Create chart slide matching HTML - white background"""
+        blank_layout = prs.slide_layouts[6]
+        slide = prs.slides.add_slide(blank_layout)
+        
+        # White background
+        background = slide.background
+        fill = background.fill
+        fill.solid()
+        fill.fore_color.rgb = RGBColor(255, 255, 255)
 
         title_text = slide_info.get("title", "Chart")
 
-        # Set title
-        for shape in slide.shapes:
-            if shape.has_text_frame and shape.is_placeholder:
-                phf = shape.placeholder_format
-                if phf.type == 1:  # Title
-                    shape.text = title_text
-                    for paragraph in shape.text_frame.paragraphs:
-                        for run in paragraph.runs:
-                            run.font.bold = True
-                            run.font.size = Pt(28)
+        # Add title
+        title_box = slide.shapes.add_textbox(Inches(0.5), Inches(0.5), Inches(9), Inches(0.8))
+        title_frame = title_box.text_frame
+        title_frame.text = title_text
+        title_frame.paragraphs[0].font.size = Pt(32)
+        title_frame.paragraphs[0].font.bold = True
+        title_frame.paragraphs[0].font.color.rgb = RGBColor(17, 24, 39)
 
         # Add chart on left side
         chart_data_info = slide_info.get("chart_data", {}) or {}
@@ -401,8 +392,8 @@ Return ONLY the JSON, no markdown formatting or extra text."""
         chart_data.categories = cats
         chart_data.add_series("Data", vals)
 
-        # Chart positioned on left side with spacing
-        x, y, cx, cy = Inches(0.5), Inches(2), Inches(4.5), Inches(4.5)
+        # Chart positioned on left side
+        x, y, cx, cy = Inches(0.5), Inches(1.5), Inches(4.5), Inches(4)
         chart_shape = slide.shapes.add_chart(chart_type, x, y, cx, cy, chart_data)
         chart = chart_shape.chart
 
@@ -414,49 +405,55 @@ Return ONLY the JSON, no markdown formatting or extra text."""
 
         chart.has_legend = True
 
-        # Add image if available
+        # Add image on right if available
         if image_data:
             image_stream = self._base64_to_stream(image_data)
             if image_stream:
-                # Image on right side with good spacing from chart
-                left, top, width = Inches(5.5), Inches(2), Inches(4)
+                left, top, width = Inches(5.5), Inches(1.5), Inches(4)
                 slide.shapes.add_picture(image_stream, left, top, width=width)
                 print(f"      ✅ Image added to chart slide")
 
     def _create_closing_slide_with_image(self, prs, slide_info, image_data, primary_color, accent_color):
-        """Create closing slide with educational image using template"""
-        # Use title slide layout for closing
-        slide_layout = prs.slide_layouts[0] if len(prs.slide_layouts) > 0 else prs.slide_layouts[6]
-        slide = prs.slides.add_slide(slide_layout)
+        """Create closing slide matching HTML - purple to pink gradient"""
+        blank_layout = prs.slide_layouts[6]
+        slide = prs.slides.add_slide(blank_layout)
+        
+        # Add gradient background (purple to pink)
+        background = slide.background
+        fill = background.fill
+        fill.gradient()
+        fill.gradient_angle = 45
+        fill.gradient_stops[0].color.rgb = RGBColor(168, 85, 247)  # purple-500
+        fill.gradient_stops[1].color.rgb = RGBColor(236, 72, 153)  # pink-500
 
         title_text = slide_info.get("title", "Thank You!")
         content = slide_info.get("content")
         if isinstance(content, list):
             content = "\n".join(str(x) for x in content)
 
-        # Populate template placeholders
-        for shape in slide.shapes:
-            if shape.has_text_frame and shape.is_placeholder:
-                phf = shape.placeholder_format
-                if phf.type == 1:  # Title
-                    shape.text = title_text
-                    for paragraph in shape.text_frame.paragraphs:
-                        for run in paragraph.runs:
-                            run.font.bold = True
-                            run.font.size = Pt(48)
-                elif phf.type == 2:  # Subtitle
-                    if content:
-                        shape.text = str(content)
-                        for paragraph in shape.text_frame.paragraphs:
-                            for run in paragraph.runs:
-                                run.font.size = Pt(20)
+        # Add title - centered
+        title_box = slide.shapes.add_textbox(Inches(0.5), Inches(1.5), Inches(9), Inches(1))
+        title_frame = title_box.text_frame
+        title_frame.text = title_text
+        title_frame.paragraphs[0].alignment = PP_ALIGN.CENTER
+        title_frame.paragraphs[0].font.size = Pt(54)
+        title_frame.paragraphs[0].font.bold = True
+        title_frame.paragraphs[0].font.color.rgb = RGBColor(255, 255, 255)
+
+        # Add content if exists
+        if content:
+            content_box = slide.shapes.add_textbox(Inches(0.5), Inches(2.7), Inches(9), Inches(0.6))
+            content_frame = content_box.text_frame
+            content_frame.text = str(content)
+            content_frame.paragraphs[0].alignment = PP_ALIGN.CENTER
+            content_frame.paragraphs[0].font.size = Pt(24)
+            content_frame.paragraphs[0].font.color.rgb = RGBColor(255, 255, 255)
 
         # Add image if available
         if image_data:
             image_stream = self._base64_to_stream(image_data)
             if image_stream:
-                # Centered image at bottom with proper spacing
-                left, top, width = Inches(1), Inches(.5), Inches(6)
+                left, top, width = Inches(2.5), Inches(3.5), Inches(5)
                 slide.shapes.add_picture(image_stream, left, top, width=width)
                 print(f"      ✅ Image added to closing slide")
     

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Presentation, Image as ImageIcon, BarChart3, ChevronLeft, ChevronRight, Maximize2, Minimize2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Presentation, Image as ImageIcon, ChevronLeft, ChevronRight, Maximize2, Minimize2 } from 'lucide-react';
 
 function ImagePlaceholder() {
   return (
@@ -152,12 +152,10 @@ function ClosingSlide({ slide, image }) {
 }
 
 function PresentationViewer({ presentation, images, isProcessing = false }) {
-  const [viewMode, setViewMode] = useState('scroll'); // 'scroll' or 'slideshow'
+  const [viewMode, setViewMode] = useState('slideshow'); // Default to slideshow mode
   const [currentSlide, setCurrentSlide] = useState(0);
   
-  if (!presentation) return null;
-
-  const slides = presentation.slides || [];
+  const slides = presentation?.slides || [];
 
   const nextSlide = () => {
     if (currentSlide < slides.length - 1) {
@@ -176,8 +174,8 @@ function PresentationViewer({ presentation, images, isProcessing = false }) {
     setCurrentSlide(0);
   };
 
-  // Keyboard navigation
-  React.useEffect(() => {
+  // Keyboard navigation - MUST be before early return
+  useEffect(() => {
     if (viewMode !== 'slideshow') return;
 
     const handleKeyDown = (e) => {
@@ -194,7 +192,11 @@ function PresentationViewer({ presentation, images, isProcessing = false }) {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [viewMode, currentSlide, slides.length]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewMode, currentSlide]);
+
+  // Early return AFTER all hooks
+  if (!presentation) return null;
 
   return (
     <div>
@@ -240,10 +242,10 @@ function PresentationViewer({ presentation, images, isProcessing = false }) {
 
       {/* Slideshow Mode */}
       {viewMode === 'slideshow' ? (
-        <div className="relative">
+        <div className="relative pb-8">
           {/* Current Slide */}
-          <div className="bg-gray-900 rounded-xl overflow-hidden" style={{ aspectRatio: '16/9' }}>
-            <div className="w-full h-full flex items-center justify-center p-8">
+          <div className="bg-gray-900 rounded-xl overflow-hidden shadow-2xl" style={{ aspectRatio: '16/9' }}>
+            <div className="w-full h-full flex items-center justify-center p-12">
               {(() => {
                 const slide = slides[currentSlide];
                 const imageKey = `slide_${currentSlide}`;
@@ -251,7 +253,7 @@ function PresentationViewer({ presentation, images, isProcessing = false }) {
                 const slideType = slide?.type || 'content';
 
                 return (
-                  <div className="w-full h-full">
+                  <div className="w-full h-full overflow-y-auto">
                     {slideType === 'title' && <TitleSlide slide={slide} image={image} />}
                     {slideType === 'section' && <SectionSlide slide={slide} image={image} />}
                     {slideType === 'content' && <ContentSlide slide={slide} image={image} />}
