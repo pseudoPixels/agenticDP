@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
+import { Download } from 'lucide-react';
 import LessonGenerator from '../components/LessonGenerator';
 import LessonViewer from '../components/LessonViewer';
+import PresentationViewer from '../components/PresentationViewer';
 import ChatEditor from '../components/ChatEditor';
 import SaveButton from '../components/SaveButton';
 import AssignButton from '../components/AssignButton';
 import DownloadButton from '../components/DownloadButton';
+import { downloadPresentation } from '../api';
 
 function Home() {
   const [currentLesson, setCurrentLesson] = useState(null);
@@ -37,6 +40,31 @@ function Home() {
     setSavedResourceId(resourceId);
   };
 
+  const handleDownloadPresentation = async () => {
+    if (!currentLesson || !currentLesson.id) return;
+    
+    try {
+      const blob = await downloadPresentation(currentLesson.id);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${currentLesson.title || 'presentation'}.pptx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Error downloading presentation:', error);
+      alert('Failed to download presentation. Please try again.');
+    }
+  };
+
+  const isPresentation = currentLesson?.contentType === 'presentation';
+  
+  console.log('Home - Render - currentLesson:', currentLesson?.title);
+  console.log('Home - Render - contentType:', currentLesson?.contentType);
+  console.log('Home - Render - isPresentation:', isPresentation);
+
   return (
     <>
       {/* Main Content */}
@@ -54,17 +82,29 @@ function Home() {
           <div className="bg-white border-b border-gray-200 sticky top-[57px] z-30">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
               <div className="flex flex-wrap items-center gap-3">
-                <SaveButton
-                  lesson={currentLesson}
-                  images={lessonImages}
-                  onSaved={handleSaved}
-                />
-                <DownloadButton lesson={currentLesson} />
-                {savedResourceId && (
-                  <AssignButton
-                    lesson={currentLesson}
-                    resourceId={savedResourceId}
-                  />
+                {isPresentation ? (
+                  <button
+                    onClick={handleDownloadPresentation}
+                    className="flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-medium rounded-lg transition-colors"
+                  >
+                    <Download className="w-4 h-4" />
+                    Download PPTX
+                  </button>
+                ) : (
+                  <>
+                    <SaveButton
+                      lesson={currentLesson}
+                      images={lessonImages}
+                      onSaved={handleSaved}
+                    />
+                    <DownloadButton lesson={currentLesson} />
+                    {savedResourceId && (
+                      <AssignButton
+                        lesson={currentLesson}
+                        resourceId={savedResourceId}
+                      />
+                    )}
+                  </>
                 )}
               </div>
             </div>
@@ -73,9 +113,13 @@ function Home() {
           {/* Desktop Layout - Side by side */}
           <main className="hidden lg:block max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Lesson Content - 2/3 width */}
+              {/* Content - 2/3 width */}
               <div className="lg:col-span-2">
-                <LessonViewer lesson={currentLesson} images={lessonImages} isProcessing={isProcessing} />
+                {isPresentation ? (
+                  <PresentationViewer presentation={currentLesson} images={lessonImages} isProcessing={isProcessing} />
+                ) : (
+                  <LessonViewer lesson={currentLesson} images={lessonImages} isProcessing={isProcessing} />
+                )}
               </div>
 
               {/* Chat Editor - 1/3 width */}
@@ -91,9 +135,13 @@ function Home() {
 
           {/* Mobile Layout - ChatGPT style */}
           <main className="lg:hidden flex flex-col" style={{ height: 'calc(100vh - 9rem)' }}>
-            {/* Lesson Content - Scrollable */}
+            {/* Content - Scrollable */}
             <div className="flex-1 overflow-y-auto px-4 py-4">
-              <LessonViewer lesson={currentLesson} images={lessonImages} isProcessing={isProcessing} />
+              {isPresentation ? (
+                <PresentationViewer presentation={currentLesson} images={lessonImages} isProcessing={isProcessing} />
+              ) : (
+                <LessonViewer lesson={currentLesson} images={lessonImages} isProcessing={isProcessing} />
+              )}
             </div>
 
             {/* Chat Editor - Fixed at bottom */}

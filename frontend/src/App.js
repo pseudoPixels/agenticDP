@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { Plus, HelpCircle, ChevronDown, Menu, X } from 'lucide-react';
+import { Plus, HelpCircle, ChevronDown, Menu, X, Download } from 'lucide-react';
 import LessonGenerator from './components/LessonGenerator';
 import LessonViewer from './components/LessonViewer';
+import PresentationViewer from './components/PresentationViewer';
 import ChatEditor from './components/ChatEditor';
+import { downloadPresentation } from './api';
 
 function App() {
   const [currentLesson, setCurrentLesson] = useState(null);
@@ -12,7 +14,10 @@ function App() {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   const handleLessonGenerated = (lesson, images) => {
-    console.log('App.js - handleLessonGenerated called with images:', Object.keys(images));
+    console.log('App.js - handleLessonGenerated called');
+    console.log('App.js - lesson:', lesson);
+    console.log('App.js - contentType:', lesson?.contentType);
+    console.log('App.js - images:', Object.keys(images));
     setCurrentLesson(lesson);
     setLessonImages(prevImages => {
       const merged = { ...prevImages, ...images };
@@ -32,6 +37,30 @@ function App() {
     setLessonImages({});
     setIsGenerating(false);
   };
+
+  const handleDownloadPresentation = async () => {
+    if (!currentLesson || !currentLesson.id) return;
+    
+    try {
+      const blob = await downloadPresentation(currentLesson.id);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${currentLesson.title || 'presentation'}.pptx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Error downloading presentation:', error);
+      alert('Failed to download presentation. Please try again.');
+    }
+  };
+
+  const isPresentation = currentLesson?.contentType === 'presentation';
+  
+  console.log('App.js - Render - currentLesson:', currentLesson?.title);
+  console.log('App.js - Render - isPresentation:', isPresentation);
 
   return (
     <div className="min-h-screen">
@@ -144,12 +173,31 @@ function App() {
         </main>
       ) : (
         <>
+          {/* Download Button for Presentations */}
+          {isPresentation && (
+            <div className="bg-white border-b border-gray-200 sticky top-[57px] z-30">
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+                <button
+                  onClick={handleDownloadPresentation}
+                  className="flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-medium rounded-lg transition-colors"
+                >
+                  <Download className="w-4 h-4" />
+                  Download PPTX
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Desktop Layout - Side by side */}
           <main className="hidden lg:block max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Lesson Content - 2/3 width */}
+              {/* Content - 2/3 width */}
               <div className="lg:col-span-2">
-                <LessonViewer lesson={currentLesson} images={lessonImages} />
+                {isPresentation ? (
+                  <PresentationViewer presentation={currentLesson} images={lessonImages} />
+                ) : (
+                  <LessonViewer lesson={currentLesson} images={lessonImages} />
+                )}
               </div>
 
               {/* Chat Editor - 1/3 width */}
@@ -164,9 +212,13 @@ function App() {
 
           {/* Mobile Layout - ChatGPT style */}
           <main className="lg:hidden flex flex-col" style={{ height: 'calc(100vh - 4rem)' }}>
-            {/* Lesson Content - Scrollable */}
+            {/* Content - Scrollable */}
             <div className="flex-1 overflow-y-auto px-4 py-4">
-              <LessonViewer lesson={currentLesson} images={lessonImages} />
+              {isPresentation ? (
+                <PresentationViewer presentation={currentLesson} images={lessonImages} />
+              ) : (
+                <LessonViewer lesson={currentLesson} images={lessonImages} />
+              )}
             </div>
 
             {/* Chat Editor - Fixed at bottom */}

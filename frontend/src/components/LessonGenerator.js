@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Sparkles, Loader2, CheckCircle2, Circle, ChevronDown, Check, Lightbulb } from 'lucide-react';
-import { generateLessonStream } from '../api';
+import { generateLessonStream, generatePresentationStream } from '../api';
 
 const AGENT_STEPS = [
   { id: 'analyzing', label: 'Analyzing your request', duration: 1200 },
@@ -131,53 +131,96 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
     }
 
     setIsGenerating(true);
-    setStatus('Generating lesson...');
+    const contentTypeName = selectedType === 'Lesson Plan' ? 'lesson' : selectedType.toLowerCase();
+    setStatus(`Generating ${contentTypeName}...`);
     setAgentStep('analyzing');
     setCompletedSteps([]);
 
-    let currentLesson = null;
+    let currentContent = null;
     let currentImages = {};
 
     try {
-      await generateLessonStream(topic, (data) => {
-        if (data.type === 'init') {
-          // Initial connection established
-        } else if (data.type === 'lesson') {
-          // Complete the generating step
-          setCompletedSteps(prev => [...prev, 'generating']);
-          setStatus('Lesson ready! Loading images...');
-          currentLesson = data.lesson;
-          // Immediately show the lesson structure with empty images
-          onLessonGenerated(currentLesson, {});
-        } else if (data.type === 'image') {
-          // Update images as they come in
-          currentImages[data.key] = data.image;
-          console.log('Image received:', data.key, 'Total images:', Object.keys(currentImages).length);
-          console.log('Image data preview:', data.image.substring(0, 50));
-          if (currentLesson) {
-            // Create a new object to trigger re-render
-            const updatedImages = { ...currentImages };
-            onLessonGenerated(currentLesson, updatedImages);
-          }
-        } else if (data.type === 'complete') {
-          setStatus('Lesson generated successfully!');
-          setIsGenerating(false);
-          setTimeout(() => {
-            setStatus('');
+      // Route to appropriate generator based on content type
+      if (selectedType === 'Presentation Deck') {
+        await generatePresentationStream(topic, (data) => {
+          console.log('Presentation stream data:', data.type, data);
+          if (data.type === 'init') {
+            // Initial connection established
+          } else if (data.type === 'presentation') {
+            // Complete the generating step
+            setCompletedSteps(prev => [...prev, 'generating']);
+            setStatus('Presentation ready! Loading images...');
+            currentContent = { ...data.presentation, contentType: 'presentation' };
+            console.log('Setting presentation content:', currentContent);
+            // Immediately show the presentation structure with empty images
+            onLessonGenerated(currentContent, {});
+          } else if (data.type === 'image') {
+            // Update images as they come in
+            currentImages[data.key] = data.image;
+            console.log('Image received:', data.key, 'Total images:', Object.keys(currentImages).length);
+            if (currentContent) {
+              // Create a new object to trigger re-render
+              const updatedImages = { ...currentImages };
+              onLessonGenerated(currentContent, updatedImages);
+            }
+          } else if (data.type === 'complete') {
+            setStatus('Presentation generated successfully!');
+            setIsGenerating(false);
+            setTimeout(() => {
+              setStatus('');
+              setAgentStep('');
+              setCompletedSteps([]);
+            }, 3000);
+          } else if (data.type === 'error') {
+            console.error('Error generating presentation:', data.error);
+            setStatus('Error generating presentation. Please try again.');
+            setIsGenerating(false);
             setAgentStep('');
             setCompletedSteps([]);
-          }, 3000);
-        } else if (data.type === 'error') {
-          console.error('Error generating lesson:', data.error);
-          setStatus('Error generating lesson. Please try again.');
-          setIsGenerating(false);
-          setAgentStep('');
-          setCompletedSteps([]);
-        }
-      });
+          }
+        });
+      } else {
+        // Default to lesson generation
+        await generateLessonStream(topic, (data) => {
+          if (data.type === 'init') {
+            // Initial connection established
+          } else if (data.type === 'lesson') {
+            // Complete the generating step
+            setCompletedSteps(prev => [...prev, 'generating']);
+            setStatus('Lesson ready! Loading images...');
+            currentContent = { ...data.lesson, contentType: 'lesson' };
+            // Immediately show the lesson structure with empty images
+            onLessonGenerated(currentContent, {});
+          } else if (data.type === 'image') {
+            // Update images as they come in
+            currentImages[data.key] = data.image;
+            console.log('Image received:', data.key, 'Total images:', Object.keys(currentImages).length);
+            console.log('Image data preview:', data.image.substring(0, 50));
+            if (currentContent) {
+              // Create a new object to trigger re-render
+              const updatedImages = { ...currentImages };
+              onLessonGenerated(currentContent, updatedImages);
+            }
+          } else if (data.type === 'complete') {
+            setStatus('Lesson generated successfully!');
+            setIsGenerating(false);
+            setTimeout(() => {
+              setStatus('');
+              setAgentStep('');
+              setCompletedSteps([]);
+            }, 3000);
+          } else if (data.type === 'error') {
+            console.error('Error generating lesson:', data.error);
+            setStatus('Error generating lesson. Please try again.');
+            setIsGenerating(false);
+            setAgentStep('');
+            setCompletedSteps([]);
+          }
+        });
+      }
     } catch (error) {
-      console.error('Error generating lesson:', error);
-      setStatus('Error generating lesson. Please try again.');
+      console.error('Error generating content:', error);
+      setStatus(`Error generating ${contentTypeName}. Please try again.`);
       setIsGenerating(false);
       setAgentStep('');
       setCompletedSteps([]);

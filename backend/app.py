@@ -11,7 +11,7 @@ import time
 load_dotenv()
 
 # Now import routes and agents (after env vars are loaded)
-from agents import LessonGeneratorAgent, ImageGeneratorAgent, LessonEditorAgent
+from agents import LessonGeneratorAgent, ImageGeneratorAgent, LessonEditorAgent, PresentationGeneratorAgent
 from agents.agentic_editor import AgenticLessonEditor
 from routes.resources import resources_bp
 from routes.students import students_bp
@@ -33,12 +33,14 @@ lesson_generator = LessonGeneratorAgent(GEMINI_API_KEY)
 image_generator = ImageGeneratorAgent(GEMINI_API_KEY)
 lesson_editor = LessonEditorAgent(GEMINI_API_KEY)
 agentic_editor = AgenticLessonEditor(GEMINI_API_KEY)
+presentation_generator = PresentationGeneratorAgent(GEMINI_API_KEY)
 
 # Initialize Firebase service
 firebase_service = FirebaseService()
 
-# In-memory storage for lessons (in production, use a database)
+# In-memory storage for lessons and presentations (in production, use a database)
 lessons_store: Dict[str, Dict[str, Any]] = {}
+presentations_store: Dict[str, Dict[str, Any]] = {}
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
@@ -408,6 +410,136 @@ def list_lessons():
         
     except Exception as e:
         print(f"Error in list_lessons: {e}")
+        return jsonify({"error": str(e)}), 500
+
+# ==================== Presentation Endpoints ====================
+
+@app.route('/api/generate-presentation-stream', methods=['POST'])
+def generate_presentation_stream():
+    """Generate a presentation with streaming updates"""
+    # Extract request data BEFORE generator (inside request context)
+    data = request.json
+    topic = data.get('topic') if data else None
+    
+    if not topic:
+        return jsonify({"error": "Topic is required"}), 400
+    
+    def generate():
+        try:
+            
+            # Generate a unique presentation ID
+            presentation_id = str(uuid.uuid4())
+            
+            # Step 1: Send initial structure immediately
+            yield f"data: {json.dumps({'type': 'init', 'presentation_id': presentation_id, 'topic': topic})}\n\n"
+            
+            # Step 2: Generate presentation structure
+            print(f"Generating presentation for topic: {topic}", flush=True)
+            presentation_data = presentation_generator.generate_presentation(topic)
+            presentation_data['id'] = presentation_id
+            
+            # Store the presentation
+            presentations_store[presentation_id] = {
+                'data': presentation_data,
+                'images': {},
+                'image_generation_status': {}
+            }
+            
+            # Step 3: Send complete presentation structure
+            yield f"data: {json.dumps({'type': 'presentation', 'presentation': presentation_data})}\n\n"
+            
+            # Step 4: Generate images for each slide
+            presentation_store = presentations_store[presentation_id]
+            slides = presentation_data.get('slides', [])
+            
+            for idx, slide in enumerate(slides):
+                if 'image_prompt' in slide and slide['image_prompt']:
+                    prompt = slide['image_prompt']
+                    print(f"Generating image for slide {idx+1}/{len(slides)}: {prompt[:50]}...", flush=True)
+                    image_data = image_generator.generate_image(prompt, "realistic")
+                    if image_data:
+                        key = f'slide_{idx}'
+                        presentation_store['images'][key] = image_data
+                        yield f"data: {json.dumps({'type': 'image', 'key': key, 'image': image_data})}\n\n"
+            
+            # Step 5: Complete
+            yield f"data: {json.dumps({'type': 'complete'})}\n\n"
+            
+        except Exception as e:
+            print(f"Error in generate_presentation_stream: {e}", flush=True)
+            import traceback
+            traceback.print_exc()
+            yield f"data: {json.dumps({'type': 'error', 'error': str(e)})}\n\n"
+    
+    return Response(generate(), mimetype='text/event-stream')
+
+@app.route('/api/presentation/<presentation_id>', methods=['GET'])
+def get_presentation(presentation_id):
+    """Get a presentation by ID"""
+    try:
+        # First check if presentation is in memory
+        if presentation_id in presentations_store:
+            presentation_store = presentations_store[presentation_id]
+            return jsonify({
+                "success": True,
+                "presentation": presentation_store['data'],
+                "images": presentation_store['images']
+            })
+        
+        # If not in memory, try to load from Firebase
+        resource = firebase_service.get_resource(presentation_id)
+        if resource:
+            # Load into memory for future edits
+            presentations_store[presentation_id] = {
+                'data': resource.get('content', {}),
+                'images': resource.get('images', {}),
+                'image_generation_status': {}
+            }
+            return jsonify({
+                "success": True,
+                "presentation": resource.get('content', {}),
+                "images": resource.get('images', {})
+            })
+        
+        return jsonify({"error": "Presentation not found"}), 404
+        
+    except Exception as e:
+        print(f"Error in get_presentation: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/presentation/<presentation_id>/download', methods=['GET'])
+def download_presentation(presentation_id):
+    """Download presentation as PPTX file"""
+    try:
+        # Get presentation data
+        if presentation_id in presentations_store:
+            presentation_store = presentations_store[presentation_id]
+            presentation_data = presentation_store['data']
+            images = presentation_store['images']
+        else:
+            # Try loading from Firebase
+            resource = firebase_service.get_resource(presentation_id)
+            if not resource:
+                return jsonify({"error": "Presentation not found"}), 404
+            presentation_data = resource.get('content', {})
+            images = resource.get('images', {})
+        
+        # Create PPTX file
+        print(f"Creating PPTX for presentation: {presentation_data.get('title', 'Untitled')}")
+        pptx_stream = presentation_generator.create_pptx(presentation_data, images)
+        
+        # Send file
+        filename = f"{presentation_data.get('title', 'presentation').replace(' ', '_')}.pptx"
+        return Response(
+            pptx_stream.getvalue(),
+            mimetype='application/vnd.openxmlformats-officedocument.presentationml.presentation',
+            headers={'Content-Disposition': f'attachment; filename="{filename}"'}
+        )
+        
+    except Exception as e:
+        print(f"Error downloading presentation: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
