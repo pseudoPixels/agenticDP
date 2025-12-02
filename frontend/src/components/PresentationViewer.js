@@ -1,5 +1,5 @@
-import React from 'react';
-import { Presentation, Image as ImageIcon, BarChart3 } from 'lucide-react';
+import React, { useState } from 'react';
+import { Presentation, Image as ImageIcon, BarChart3, ChevronLeft, ChevronRight, Maximize2, Minimize2 } from 'lucide-react';
 
 function ImagePlaceholder() {
   return (
@@ -152,17 +152,75 @@ function ClosingSlide({ slide, image }) {
 }
 
 function PresentationViewer({ presentation, images, isProcessing = false }) {
+  const [viewMode, setViewMode] = useState('scroll'); // 'scroll' or 'slideshow'
+  const [currentSlide, setCurrentSlide] = useState(0);
+  
   if (!presentation) return null;
 
   const slides = presentation.slides || [];
+
+  const nextSlide = () => {
+    if (currentSlide < slides.length - 1) {
+      setCurrentSlide(currentSlide + 1);
+    }
+  };
+
+  const prevSlide = () => {
+    if (currentSlide > 0) {
+      setCurrentSlide(currentSlide - 1);
+    }
+  };
+
+  const toggleViewMode = () => {
+    setViewMode(prev => prev === 'scroll' ? 'slideshow' : 'scroll');
+    setCurrentSlide(0);
+  };
+
+  // Keyboard navigation
+  React.useEffect(() => {
+    if (viewMode !== 'slideshow') return;
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        nextSlide();
+      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        prevSlide();
+      } else if (e.key === 'Escape') {
+        setViewMode('scroll');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [viewMode, currentSlide, slides.length]);
 
   return (
     <div>
       {/* Presentation Header */}
       <div className={`bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6 ${isProcessing ? 'opacity-50' : ''}`}>
-        <div className="flex items-center gap-3 mb-3">
-          <Presentation className="w-8 h-8 text-emerald-500" />
-          <h1 className="text-3xl font-bold text-gray-900">{presentation.title}</h1>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-3">
+            <Presentation className="w-8 h-8 text-emerald-500" />
+            <h1 className="text-3xl font-bold text-gray-900">{presentation.title}</h1>
+          </div>
+          <button
+            onClick={toggleViewMode}
+            className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-colors"
+          >
+            {viewMode === 'scroll' ? (
+              <>
+                <Maximize2 className="w-4 h-4" />
+                Slideshow Mode
+              </>
+            ) : (
+              <>
+                <Minimize2 className="w-4 h-4" />
+                Scroll Mode
+              </>
+            )}
+          </button>
         </div>
         {presentation.subtitle && (
           <p className="text-lg text-gray-600 mb-3">{presentation.subtitle}</p>
@@ -180,30 +238,102 @@ function PresentationViewer({ presentation, images, isProcessing = false }) {
         </div>
       </div>
 
-      {/* Slides */}
-      <div className="space-y-6">
-        {slides.map((slide, index) => {
-          const imageKey = `slide_${index}`;
-          const image = images[imageKey];
-          const slideType = slide.type || 'content';
+      {/* Slideshow Mode */}
+      {viewMode === 'slideshow' ? (
+        <div className="relative">
+          {/* Current Slide */}
+          <div className="bg-gray-900 rounded-xl overflow-hidden" style={{ aspectRatio: '16/9' }}>
+            <div className="w-full h-full flex items-center justify-center p-8">
+              {(() => {
+                const slide = slides[currentSlide];
+                const imageKey = `slide_${currentSlide}`;
+                const image = images[imageKey];
+                const slideType = slide?.type || 'content';
 
-          return (
-            <div key={index} className="relative">
-              {/* Slide number badge */}
-              <div className="absolute -left-4 top-4 bg-emerald-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm z-10">
-                {index + 1}
-              </div>
-
-              {/* Slide content based on type */}
-              {slideType === 'title' && <TitleSlide slide={slide} image={image} />}
-              {slideType === 'section' && <SectionSlide slide={slide} image={image} />}
-              {slideType === 'content' && <ContentSlide slide={slide} image={image} />}
-              {slideType === 'chart' && <ChartSlide slide={slide} image={image} />}
-              {slideType === 'closing' && <ClosingSlide slide={slide} image={image} />}
+                return (
+                  <div className="w-full h-full">
+                    {slideType === 'title' && <TitleSlide slide={slide} image={image} />}
+                    {slideType === 'section' && <SectionSlide slide={slide} image={image} />}
+                    {slideType === 'content' && <ContentSlide slide={slide} image={image} />}
+                    {slideType === 'chart' && <ChartSlide slide={slide} image={image} />}
+                    {slideType === 'closing' && <ClosingSlide slide={slide} image={image} />}
+                  </div>
+                );
+              })()}
             </div>
-          );
-        })}
-      </div>
+          </div>
+
+          {/* Navigation Controls */}
+          <div className="flex items-center justify-between mt-4">
+            <button
+              onClick={prevSlide}
+              disabled={currentSlide === 0}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <ChevronLeft className="w-5 h-5" />
+              Previous
+            </button>
+
+            <div className="flex items-center gap-2">
+              <span className="text-lg font-semibold text-gray-900">
+                {currentSlide + 1} / {slides.length}
+              </span>
+              {/* Slide thumbnails */}
+              <div className="flex gap-1 ml-4">
+                {slides.map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setCurrentSlide(idx)}
+                    className={`w-2 h-2 rounded-full transition-colors ${
+                      idx === currentSlide ? 'bg-emerald-500' : 'bg-gray-300 hover:bg-gray-400'
+                    }`}
+                    title={`Go to slide ${idx + 1}`}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <button
+              onClick={nextSlide}
+              disabled={currentSlide === slides.length - 1}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Next
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Keyboard hint */}
+          <p className="text-center text-sm text-gray-500 mt-2">
+            Use arrow keys to navigate slides
+          </p>
+        </div>
+      ) : (
+        /* Scroll Mode - All Slides */
+        <div className="space-y-6">
+          {slides.map((slide, index) => {
+            const imageKey = `slide_${index}`;
+            const image = images[imageKey];
+            const slideType = slide.type || 'content';
+
+            return (
+              <div key={index} className="relative">
+                {/* Slide number badge */}
+                <div className="absolute -left-4 top-4 bg-emerald-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm z-10">
+                  {index + 1}
+                </div>
+
+                {/* Slide content based on type */}
+                {slideType === 'title' && <TitleSlide slide={slide} image={image} />}
+                {slideType === 'section' && <SectionSlide slide={slide} image={image} />}
+                {slideType === 'content' && <ContentSlide slide={slide} image={image} />}
+                {slideType === 'chart' && <ChartSlide slide={slide} image={image} />}
+                {slideType === 'closing' && <ClosingSlide slide={slide} image={image} />}
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Processing overlay */}
       {isProcessing && (
