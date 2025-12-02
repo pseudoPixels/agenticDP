@@ -11,7 +11,7 @@ import time
 load_dotenv()
 
 # Now import routes and agents (after env vars are loaded)
-from agents import LessonGeneratorAgent, ImageGeneratorAgent, LessonEditorAgent, PresentationGeneratorAgent
+from agents import LessonGeneratorAgent, ImageGeneratorAgent, LessonEditorAgent, PresentationGeneratorAgent, WorksheetGeneratorAgent
 from agents.agentic_editor import AgenticLessonEditor
 from routes.resources import resources_bp
 from routes.students import students_bp
@@ -34,13 +34,15 @@ image_generator = ImageGeneratorAgent(GEMINI_API_KEY)
 lesson_editor = LessonEditorAgent(GEMINI_API_KEY)
 agentic_editor = AgenticLessonEditor(GEMINI_API_KEY)
 presentation_generator = PresentationGeneratorAgent(GEMINI_API_KEY)
+worksheet_generator = WorksheetGeneratorAgent(GEMINI_API_KEY)
 
 # Initialize Firebase service
 firebase_service = FirebaseService()
 
-# In-memory storage for lessons and presentations (in production, use a database)
+# In-memory storage for lessons, presentations, and worksheets (in production, use a database)
 lessons_store: Dict[str, Dict[str, Any]] = {}
 presentations_store: Dict[str, Dict[str, Any]] = {}
+worksheets_store: Dict[str, Dict[str, Any]] = {}
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
@@ -538,6 +540,136 @@ def download_presentation(presentation_id):
         
     except Exception as e:
         print(f"Error downloading presentation: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+# ==================== Worksheet Endpoints ====================
+
+@app.route('/api/generate-worksheet-stream', methods=['POST'])
+def generate_worksheet_stream():
+    """Generate a worksheet with streaming updates"""
+    # Extract request data BEFORE generator (inside request context)
+    data = request.json
+    topic = data.get('topic') if data else None
+    
+    if not topic:
+        return jsonify({"error": "Topic is required"}), 400
+    
+    def generate():
+        try:
+            
+            # Generate a unique worksheet ID
+            worksheet_id = str(uuid.uuid4())
+            
+            # Step 1: Send initial structure immediately
+            yield f"data: {json.dumps({'type': 'init', 'worksheet_id': worksheet_id, 'topic': topic})}\n\n"
+            
+            # Step 2: Generate worksheet structure
+            print(f"Generating worksheet for topic: {topic}", flush=True)
+            worksheet_data = worksheet_generator.generate_worksheet(topic)
+            worksheet_data['id'] = worksheet_id
+            
+            # Store the worksheet
+            worksheets_store[worksheet_id] = {
+                'data': worksheet_data,
+                'images': {},
+                'image_generation_status': {}
+            }
+            
+            # Step 3: Send complete worksheet structure
+            yield f"data: {json.dumps({'type': 'worksheet', 'worksheet': worksheet_data})}\n\n"
+            
+            # Step 4: Generate images for each section
+            worksheet_store = worksheets_store[worksheet_id]
+            sections = worksheet_data.get('sections', [])
+            
+            for idx, section in enumerate(sections):
+                if 'image_prompt' in section and section['image_prompt']:
+                    prompt = section['image_prompt']
+                    print(f"Generating image for section {idx+1}/{len(sections)}: {prompt[:50]}...", flush=True)
+                    image_data = image_generator.generate_image(prompt, "educational")
+                    if image_data:
+                        key = f'section_{idx}'
+                        worksheet_store['images'][key] = image_data
+                        yield f"data: {json.dumps({'type': 'image', 'key': key, 'image': image_data})}\n\n"
+            
+            # Step 5: Complete
+            yield f"data: {json.dumps({'type': 'complete'})}\n\n"
+            
+        except Exception as e:
+            print(f"Error in generate_worksheet_stream: {e}", flush=True)
+            import traceback
+            traceback.print_exc()
+            yield f"data: {json.dumps({'type': 'error', 'error': str(e)})}\n\n"
+    
+    return Response(generate(), mimetype='text/event-stream')
+
+@app.route('/api/worksheet/<worksheet_id>', methods=['GET'])
+def get_worksheet(worksheet_id):
+    """Get a worksheet by ID"""
+    try:
+        # First check if worksheet is in memory
+        if worksheet_id in worksheets_store:
+            worksheet_store = worksheets_store[worksheet_id]
+            return jsonify({
+                "success": True,
+                "worksheet": worksheet_store['data'],
+                "images": worksheet_store['images']
+            })
+        
+        # If not in memory, try to load from Firebase
+        resource = firebase_service.get_resource(worksheet_id)
+        if resource:
+            # Load into memory for future edits
+            worksheets_store[worksheet_id] = {
+                'data': resource.get('content', {}),
+                'images': resource.get('images', {}),
+                'image_generation_status': {}
+            }
+            return jsonify({
+                "success": True,
+                "worksheet": resource.get('content', {}),
+                "images": resource.get('images', {})
+            })
+        
+        return jsonify({"error": "Worksheet not found"}), 404
+        
+    except Exception as e:
+        print(f"Error in get_worksheet: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/worksheet/<worksheet_id>/download', methods=['GET'])
+def download_worksheet(worksheet_id):
+    """Download worksheet as PDF file"""
+    try:
+        # Get worksheet data
+        if worksheet_id in worksheets_store:
+            worksheet_store = worksheets_store[worksheet_id]
+            worksheet_data = worksheet_store['data']
+            images = worksheet_store['images']
+        else:
+            # Try loading from Firebase
+            resource = firebase_service.get_resource(worksheet_id)
+            if not resource:
+                return jsonify({"error": "Worksheet not found"}), 404
+            worksheet_data = resource.get('content', {})
+            images = resource.get('images', {})
+        
+        # Create PDF file
+        print(f"Creating PDF for worksheet: {worksheet_data.get('title', 'Untitled')}")
+        pdf_stream = worksheet_generator.create_pdf(worksheet_data, images)
+        
+        # Send file
+        filename = f"{worksheet_data.get('title', 'worksheet').replace(' ', '_')}.pdf"
+        return Response(
+            pdf_stream.getvalue(),
+            mimetype='application/pdf',
+            headers={'Content-Disposition': f'attachment; filename="{filename}"'}
+        )
+        
+    except Exception as e:
+        print(f"Error downloading worksheet: {e}")
         import traceback
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500

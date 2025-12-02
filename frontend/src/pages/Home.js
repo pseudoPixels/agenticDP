@@ -3,6 +3,7 @@ import { Download } from 'lucide-react';
 import LessonGenerator from '../components/LessonGenerator';
 import LessonViewer from '../components/LessonViewer';
 import PresentationViewer from '../components/PresentationViewer';
+import WorksheetViewer from '../components/WorksheetViewer';
 import ChatEditor from '../components/ChatEditor';
 import SaveButton from '../components/SaveButton';
 import AssignButton from '../components/AssignButton';
@@ -59,11 +60,14 @@ function Home() {
     }
   };
 
-  const isPresentation = currentLesson?.contentType === 'presentation';
+  const contentType = currentLesson?.contentType;
+  const isPresentation = contentType === 'presentation';
+  const isWorksheet = contentType === 'worksheet';
   
   console.log('Home - Render - currentLesson:', currentLesson?.title);
-  console.log('Home - Render - contentType:', currentLesson?.contentType);
+  console.log('Home - Render - contentType:', contentType);
   console.log('Home - Render - isPresentation:', isPresentation);
+  console.log('Home - Render - isWorksheet:', isWorksheet);
 
   return (
     <>
@@ -112,24 +116,28 @@ function Home() {
 
           {/* Desktop Layout - Side by side */}
           <main className="hidden lg:block max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Content - 2/3 width */}
-              <div className="lg:col-span-2">
+            <div className={`grid grid-cols-1 ${isPresentation || isWorksheet ? 'lg:grid-cols-1' : 'lg:grid-cols-3'} gap-6`}>
+              {/* Content */}
+              <div className={isPresentation || isWorksheet ? '' : 'lg:col-span-2'}>
                 {isPresentation ? (
                   <PresentationViewer presentation={currentLesson} images={lessonImages} isProcessing={isProcessing} />
+                ) : isWorksheet ? (
+                  <WorksheetViewer worksheet={currentLesson} images={lessonImages} isProcessing={isProcessing} />
                 ) : (
                   <LessonViewer lesson={currentLesson} images={lessonImages} isProcessing={isProcessing} />
                 )}
               </div>
 
-              {/* Chat Editor - 1/3 width */}
-              <div className="lg:col-span-1">
-                <ChatEditor
-                  lessonId={currentLesson.id}
-                  onLessonUpdated={handleLessonUpdated}
-                  onProcessingChange={handleProcessingChange}
-                />
-              </div>
+              {/* Chat Editor - Only for lessons */}
+              {!isPresentation && !isWorksheet && (
+                <div className="lg:col-span-1">
+                  <ChatEditor
+                    lessonId={currentLesson.id}
+                    onLessonUpdated={handleLessonUpdated}
+                    onProcessingChange={handleProcessingChange}
+                  />
+                </div>
+              )}
             </div>
           </main>
 
@@ -139,20 +147,24 @@ function Home() {
             <div className="flex-1 overflow-y-auto px-4 py-4">
               {isPresentation ? (
                 <PresentationViewer presentation={currentLesson} images={lessonImages} isProcessing={isProcessing} />
+              ) : isWorksheet ? (
+                <WorksheetViewer worksheet={currentLesson} images={lessonImages} isProcessing={isProcessing} />
               ) : (
                 <LessonViewer lesson={currentLesson} images={lessonImages} isProcessing={isProcessing} />
               )}
             </div>
 
-            {/* Chat Editor - Fixed at bottom */}
-            <div className="border-t border-gray-200 bg-white safe-bottom">
-              <ChatEditor
-                lessonId={currentLesson.id}
-                onLessonUpdated={handleLessonUpdated}
-                onProcessingChange={handleProcessingChange}
-                isMobile={true}
-              />
-            </div>
+            {/* Chat Editor - Fixed at bottom - Only for lessons */}
+            {!isPresentation && !isWorksheet && (
+              <div className="border-t border-gray-200 bg-white safe-bottom">
+                <ChatEditor
+                  lessonId={currentLesson.id}
+                  onLessonUpdated={handleLessonUpdated}
+                  onProcessingChange={handleProcessingChange}
+                  isMobile={true}
+                />
+              </div>
+            )}
           </main>
         </>
       )}

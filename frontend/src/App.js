@@ -3,6 +3,7 @@ import { Plus, HelpCircle, ChevronDown, Menu, X, Download } from 'lucide-react';
 import LessonGenerator from './components/LessonGenerator';
 import LessonViewer from './components/LessonViewer';
 import PresentationViewer from './components/PresentationViewer';
+import WorksheetViewer from './components/WorksheetViewer';
 import ChatEditor from './components/ChatEditor';
 import { downloadPresentation } from './api';
 
@@ -57,10 +58,14 @@ function App() {
     }
   };
 
-  const isPresentation = currentLesson?.contentType === 'presentation';
+  const contentType = currentLesson?.contentType;
+  const isPresentation = contentType === 'presentation';
+  const isWorksheet = contentType === 'worksheet';
   
   console.log('App.js - Render - currentLesson:', currentLesson?.title);
-  console.log('App.js - Render - isPresentation:', isPresentation);
+  console.log('App.js - Render - contentType:', contentType);
+  console.log('App.js - Render - isWorksheet:', isWorksheet);
+  console.log('App.js - Render - worksheet sections:', currentLesson?.sections?.length);
 
   return (
     <div className="min-h-screen">
@@ -190,23 +195,27 @@ function App() {
 
           {/* Desktop Layout - Side by side */}
           <main className="hidden lg:block max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Content - 2/3 width */}
-              <div className="lg:col-span-2">
+            <div className={`grid grid-cols-1 ${isPresentation || isWorksheet ? 'lg:grid-cols-1' : 'lg:grid-cols-3'} gap-6`}>
+              {/* Content */}
+              <div className={isPresentation || isWorksheet ? '' : 'lg:col-span-2'}>
                 {isPresentation ? (
-                  <PresentationViewer presentation={currentLesson} images={lessonImages} />
+                  <PresentationViewer presentation={currentLesson} images={lessonImages} isProcessing={isGenerating} />
+                ) : isWorksheet ? (
+                  <WorksheetViewer worksheet={currentLesson} images={lessonImages} isProcessing={isGenerating} />
                 ) : (
                   <LessonViewer lesson={currentLesson} images={lessonImages} />
                 )}
               </div>
 
-              {/* Chat Editor - 1/3 width */}
-              <div className="lg:col-span-1">
-                <ChatEditor
-                  lessonId={currentLesson.id}
-                  onLessonUpdated={handleLessonUpdated}
-                />
-              </div>
+              {/* Chat Editor - Only for lessons, not presentations or worksheets */}
+              {!isPresentation && !isWorksheet && (
+                <div className="lg:col-span-1">
+                  <ChatEditor
+                    lessonId={currentLesson.id}
+                    onLessonUpdated={handleLessonUpdated}
+                  />
+                </div>
+              )}
             </div>
           </main>
 
@@ -215,20 +224,24 @@ function App() {
             {/* Content - Scrollable */}
             <div className="flex-1 overflow-y-auto px-4 py-4">
               {isPresentation ? (
-                <PresentationViewer presentation={currentLesson} images={lessonImages} />
+                <PresentationViewer presentation={currentLesson} images={lessonImages} isProcessing={isGenerating} />
+              ) : isWorksheet ? (
+                <WorksheetViewer worksheet={currentLesson} images={lessonImages} isProcessing={isGenerating} />
               ) : (
                 <LessonViewer lesson={currentLesson} images={lessonImages} />
               )}
             </div>
 
-            {/* Chat Editor - Fixed at bottom */}
-            <div className="border-t border-gray-200 bg-white safe-bottom">
-              <ChatEditor
-                lessonId={currentLesson.id}
-                onLessonUpdated={handleLessonUpdated}
-                isMobile={true}
-              />
-            </div>
+            {/* Chat Editor - Fixed at bottom - Only for lessons */}
+            {!isPresentation && !isWorksheet && (
+              <div className="border-t border-gray-200 bg-white safe-bottom">
+                <ChatEditor
+                  lessonId={currentLesson.id}
+                  onLessonUpdated={handleLessonUpdated}
+                  isMobile={true}
+                />
+              </div>
+            )}
           </main>
         </>
       )}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Sparkles, Loader2, CheckCircle2, Circle, ChevronDown, Check, Lightbulb } from 'lucide-react';
-import { generateLessonStream, generatePresentationStream } from '../api';
+import { generateLessonStream, generatePresentationStream, generateWorksheetStream } from '../api';
 
 const AGENT_STEPS = [
   { id: 'analyzing', label: 'Analyzing your request', duration: 1200 },
@@ -174,6 +174,44 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
           } else if (data.type === 'error') {
             console.error('Error generating presentation:', data.error);
             setStatus('Error generating presentation. Please try again.');
+            setIsGenerating(false);
+            setAgentStep('');
+            setCompletedSteps([]);
+          }
+        });
+      } else if (selectedType === 'Worksheet') {
+        await generateWorksheetStream(topic, (data) => {
+          console.log('Worksheet stream data:', data.type, data);
+          if (data.type === 'init') {
+            // Initial connection established
+          } else if (data.type === 'worksheet') {
+            // Complete the generating step
+            setCompletedSteps(prev => [...prev, 'generating']);
+            setStatus('Worksheet ready! Loading images...');
+            currentContent = { ...data.worksheet, contentType: 'worksheet' };
+            console.log('Setting worksheet content:', currentContent);
+            // Immediately show the worksheet structure with empty images
+            onLessonGenerated(currentContent, {});
+          } else if (data.type === 'image') {
+            // Update images as they come in
+            currentImages[data.key] = data.image;
+            console.log('Image received:', data.key, 'Total images:', Object.keys(currentImages).length);
+            if (currentContent) {
+              // Create a new object to trigger re-render
+              const updatedImages = { ...currentImages };
+              onLessonGenerated(currentContent, updatedImages);
+            }
+          } else if (data.type === 'complete') {
+            setStatus('Worksheet generated successfully!');
+            setIsGenerating(false);
+            setTimeout(() => {
+              setStatus('');
+              setAgentStep('');
+              setCompletedSteps([]);
+            }, 3000);
+          } else if (data.type === 'error') {
+            console.error('Error generating worksheet:', data.error);
+            setStatus('Error generating worksheet. Please try again.');
             setIsGenerating(false);
             setAgentStep('');
             setCompletedSteps([]);
