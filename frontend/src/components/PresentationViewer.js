@@ -18,14 +18,14 @@ function SlideImage({ src, alt }) {
   }
 
   return (
-    <div className="w-full">
+    <div className="w-full max-h-64 flex items-center justify-center">
       {loading && !error && (
-        <div className="w-full h-64 bg-gradient-to-br from-gray-100 to-gray-200 animate-pulse flex items-center justify-center rounded-lg">
+        <div className="w-full h-48 bg-gradient-to-br from-gray-100 to-gray-200 animate-pulse flex items-center justify-center rounded-lg">
           <ImageIcon className="w-16 h-16 text-gray-400" />
         </div>
       )}
       {error && (
-        <div className="w-full h-64 bg-red-50 border border-red-200 flex flex-col items-center justify-center rounded-lg">
+        <div className="w-full h-48 bg-red-50 border border-red-200 flex flex-col items-center justify-center rounded-lg">
           <ImageIcon className="w-16 h-16 text-red-400 mb-2" />
           <p className="text-red-600 text-sm">Failed to load image</p>
         </div>
@@ -34,7 +34,7 @@ function SlideImage({ src, alt }) {
         key={src}
         src={src}
         alt={alt}
-        className={`w-full object-cover rounded-lg animate-fade-in ${loading || error ? 'hidden' : ''}`}
+        className={`max-w-full max-h-64 object-contain rounded-lg animate-fade-in ${loading || error ? 'hidden' : ''}`}
         onLoad={() => setLoading(false)}
         onError={(e) => {
           console.error('Image load error:', src, e);
@@ -48,11 +48,11 @@ function SlideImage({ src, alt }) {
 
 function TitleSlide({ slide, image }) {
   return (
-    <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border-2 border-emerald-200 rounded-xl p-8 mb-6">
-      <div className="text-center mb-6">
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">{slide.title}</h2>
+    <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border-2 border-emerald-200 rounded-xl p-6 h-full flex flex-col justify-center">
+      <div className="text-center mb-4">
+        <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">{slide.title}</h2>
         {slide.content && (
-          <p className="text-xl text-gray-600">{slide.content}</p>
+          <p className="text-lg md:text-xl text-gray-600">{slide.content}</p>
         )}
       </div>
       {image && <SlideImage src={image} alt={slide.title} />}
@@ -62,8 +62,8 @@ function TitleSlide({ slide, image }) {
 
 function SectionSlide({ slide, image }) {
   return (
-    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-8 mb-6">
-      <h2 className="text-3xl font-bold text-center text-gray-900 mb-6">{slide.title}</h2>
+    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-6 h-full flex flex-col justify-center">
+      <h2 className="text-2xl md:text-3xl font-bold text-center text-gray-900 mb-4">{slide.title}</h2>
       {image && <SlideImage src={image} alt={slide.title} />}
     </div>
   );
@@ -73,21 +73,21 @@ function ContentSlide({ slide, image }) {
   const content = Array.isArray(slide.content) ? slide.content : [slide.content];
   
   return (
-    <div className="bg-white border-2 border-gray-200 rounded-xl p-8 mb-6">
-      <h2 className="text-2xl font-bold text-gray-900 mb-6">{slide.title}</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <ul className="space-y-3">
+    <div className="bg-white border-2 border-gray-200 rounded-xl p-6 h-full flex flex-col">
+      <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-4">{slide.title}</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 overflow-hidden">
+        <div className="overflow-y-auto">
+          <ul className="space-y-2">
             {content.map((item, idx) => (
-              <li key={idx} className="flex items-start gap-3">
+              <li key={idx} className="flex items-start gap-2">
                 <span className="flex-shrink-0 w-2 h-2 bg-emerald-500 rounded-full mt-2"></span>
-                <span className="text-gray-700 text-lg">{item}</span>
+                <span className="text-gray-700 text-sm md:text-base">{item}</span>
               </li>
             ))}
           </ul>
         </div>
         {image && (
-          <div>
+          <div className="flex items-center justify-center">
             <SlideImage src={image} alt={slide.title} />
           </div>
         )}
@@ -103,23 +103,23 @@ function ChartSlide({ slide, image }) {
   const maxValue = Math.max(...values, 1);
   
   return (
-    <div className="bg-white border-2 border-gray-200 rounded-xl p-8 mb-6">
-      <h2 className="text-2xl font-bold text-gray-900 mb-6">{slide.title}</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
+    <div className="bg-white border-2 border-gray-200 rounded-xl p-6 h-full flex flex-col">
+      <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-4">{slide.title}</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 overflow-hidden">
+        <div className="overflow-y-auto">
           {chartData.title && (
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">{chartData.title}</h3>
+            <h3 className="text-base md:text-lg font-semibold text-gray-800 mb-3">{chartData.title}</h3>
           )}
-          <div className="space-y-3">
+          <div className="space-y-2">
             {categories.map((category, idx) => (
               <div key={idx} className="space-y-1">
-                <div className="flex justify-between text-sm">
+                <div className="flex justify-between text-xs md:text-sm">
                   <span className="text-gray-700">{category}</span>
                   <span className="text-gray-900 font-semibold">{values[idx]}</span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-4">
+                <div className="w-full bg-gray-200 rounded-full h-3">
                   <div
-                    className="bg-emerald-500 h-4 rounded-full transition-all duration-500"
+                    className="bg-emerald-500 h-3 rounded-full transition-all duration-500"
                     style={{ width: `${(values[idx] / maxValue) * 100}%` }}
                   ></div>
                 </div>
@@ -128,7 +128,7 @@ function ChartSlide({ slide, image }) {
           </div>
         </div>
         {image && (
-          <div>
+          <div className="flex items-center justify-center">
             <SlideImage src={image} alt={slide.title} />
           </div>
         )}
@@ -139,11 +139,11 @@ function ChartSlide({ slide, image }) {
 
 function ClosingSlide({ slide, image }) {
   return (
-    <div className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-xl p-8 mb-6">
-      <div className="text-center mb-6">
-        <h2 className="text-4xl font-bold text-gray-900 mb-4">{slide.title}</h2>
+    <div className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-xl p-6 h-full flex flex-col justify-center">
+      <div className="text-center mb-4">
+        <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">{slide.title}</h2>
         {slide.content && (
-          <p className="text-xl text-gray-600">{slide.content}</p>
+          <p className="text-lg md:text-xl text-gray-600">{slide.content}</p>
         )}
       </div>
       {image && <SlideImage src={image} alt={slide.title} />}
@@ -245,7 +245,7 @@ function PresentationViewer({ presentation, images, isProcessing = false }) {
         <div className="relative pb-8">
           {/* Current Slide */}
           <div className="bg-gray-900 rounded-xl overflow-hidden shadow-2xl" style={{ aspectRatio: '16/9' }}>
-            <div className="w-full h-full flex items-center justify-center p-12">
+            <div className="w-full h-full flex items-center justify-center p-8">
               {(() => {
                 const slide = slides[currentSlide];
                 const imageKey = `slide_${currentSlide}`;
@@ -253,7 +253,7 @@ function PresentationViewer({ presentation, images, isProcessing = false }) {
                 const slideType = slide?.type || 'content';
 
                 return (
-                  <div className="w-full h-full overflow-y-auto">
+                  <div className="w-full h-full">
                     {slideType === 'title' && <TitleSlide slide={slide} image={image} />}
                     {slideType === 'section' && <SectionSlide slide={slide} image={image} />}
                     {slideType === 'content' && <ContentSlide slide={slide} image={image} />}
