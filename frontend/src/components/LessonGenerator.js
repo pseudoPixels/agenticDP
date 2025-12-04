@@ -2,19 +2,37 @@ import React, { useState, useEffect } from 'react';
 import { Sparkles, Loader2, CheckCircle2, Circle, ChevronDown, Check, Lightbulb } from 'lucide-react';
 import { generateLessonStream, generatePresentationStream, generateWorksheetStream } from '../api';
 
-const AGENT_STEPS = [
-  { id: 'analyzing', label: 'Analyzing your request', duration: 1200 },
-  { id: 'planning', label: 'Creating lesson plan', duration: 1500 },
-  { id: 'researching', label: 'Researching topic content', duration: 1800 },
-  { id: 'drafting', label: 'Drafting lesson structure', duration: 2000 },
-  { id: 'generating', label: 'Generating detailed content', duration: 0 }, // This will complete when lesson is ready
-];
+const AGENT_STEPS_BY_TYPE = {
+  'Lesson Plan': [
+    { id: 'analyzing', label: 'Analyzing your request', duration: 1200 },
+    { id: 'planning', label: 'Creating lesson plan', duration: 1500 },
+    { id: 'researching', label: 'Researching topic content', duration: 1800 },
+    { id: 'drafting', label: 'Drafting lesson structure', duration: 2000 },
+    { id: 'generating', label: 'Generating detailed content', duration: 0 },
+  ],
+  'Presentation Deck': [
+    { id: 'analyzing', label: 'Analyzing your request', duration: 1200 },
+    { id: 'planning', label: 'Planning slide structure', duration: 1500 },
+    { id: 'researching', label: 'Researching topic content', duration: 1800 },
+    { id: 'drafting', label: 'Designing slide layouts', duration: 2000 },
+    { id: 'generating', label: 'Creating presentation slides', duration: 0 },
+  ],
+  'Worksheet': [
+    { id: 'analyzing', label: 'Analyzing your request', duration: 1200 },
+    { id: 'planning', label: 'Determining grade level', duration: 1500 },
+    { id: 'researching', label: 'Selecting worksheet types', duration: 1800 },
+    { id: 'drafting', label: 'Creating questions & activities', duration: 2000 },
+    { id: 'generating', label: 'Generating worksheet content', duration: 0 },
+  ],
+};
 
-function AgentProgress({ currentStep, completedSteps }) {
+function AgentProgress({ currentStep, completedSteps, contentType }) {
+  const steps = AGENT_STEPS_BY_TYPE[contentType] || AGENT_STEPS_BY_TYPE['Lesson Plan'];
+  
   return (
     <div className="mt-4 p-4 bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
       <div className="space-y-3">
-        {AGENT_STEPS.map((step, index) => {
+        {steps.map((step, index) => {
           const isCompleted = completedSteps.includes(step.id);
           const isCurrent = currentStep === step.id;
           
@@ -110,8 +128,9 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
     if (!isGenerating || agentStep === 'generating') return;
 
     const runSteps = async () => {
-      for (let i = 0; i < AGENT_STEPS.length - 1; i++) {
-        const step = AGENT_STEPS[i];
+      const steps = AGENT_STEPS_BY_TYPE[selectedType] || AGENT_STEPS_BY_TYPE['Lesson Plan'];
+      for (let i = 0; i < steps.length - 1; i++) {
+        const step = steps[i];
         setAgentStep(step.id);
         await new Promise(resolve => setTimeout(resolve, step.duration));
         setCompletedSteps(prev => [...prev, step.id]);
@@ -121,7 +140,7 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
     };
 
     runSteps();
-  }, [isGenerating, agentStep]);
+  }, [isGenerating, agentStep, selectedType]);
 
   const handleGenerate = async (e) => {
     e.preventDefault();
@@ -346,7 +365,7 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
         {/* Agent Progress */}
         {isGenerating && agentStep && (
           <div className="mt-6">
-            <AgentProgress currentStep={agentStep} completedSteps={completedSteps} />
+            <AgentProgress currentStep={agentStep} completedSteps={completedSteps} contentType={selectedType} />
           </div>
         )}
 
