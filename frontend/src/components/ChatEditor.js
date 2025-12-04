@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MessageCircle, Send, Loader2 } from 'lucide-react';
 
-function ChatEditor({ lessonId, onLessonUpdated, onProcessingChange, isMobile = false }) {
+function ChatEditor({ lessonId, contentType = 'lesson', onLessonUpdated, onProcessingChange, isMobile = false }) {
   const [messages, setMessages] = useState([
     // {
     //   role: 'assistant',
@@ -58,11 +58,19 @@ function ChatEditor({ lessonId, onLessonUpdated, onProcessingChange, isMobile = 
     ]);
 
     try {
-      // Call streaming edit API
+      // Call streaming edit API based on content type
+      const endpoint = contentType === 'presentation' 
+        ? `/api/edit-presentation/${lessonId}`
+        : contentType === 'worksheet'
+        ? `/api/edit-worksheet/${lessonId}`
+        : `/api/edit-lesson/${lessonId}`;
+      
       console.log('Calling edit API with lessonId:', lessonId);
+      console.log('Content type:', contentType);
+      console.log('Endpoint:', endpoint);
       console.log('Edit request:', userMessage);
       
-      const response = await fetch(`/api/edit-lesson/${lessonId}`, {
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -106,24 +114,39 @@ function ChatEditor({ lessonId, onLessonUpdated, onProcessingChange, isMobile = 
                       ? { ...msg, content: data.message }
                       : msg
                   ));
-                } else if (data.type === 'lesson') {
-                  // Received updated lesson - fetch full data with images
-                  console.log('Received updated lesson, fetching full data...');
-                  fetch(`/api/lesson/${lessonId}`)
-                    .then(res => res.json())
-                    .then(result => {
-                      if (result.success && onLessonUpdated) {
-                        console.log('ChatEditor: Fetched lesson with images:', Object.keys(result.images));
-                        // Log first 100 chars of each image to see if they're URLs or base64
-                        Object.entries(result.images).forEach(([key, value]) => {
-                          if (typeof value === 'string') {
-                            console.log(`ChatEditor: Image ${key}:`, value.substring(0, 100));
-                          }
-                        });
-                        onLessonUpdated(result.lesson, result.images);
-                      }
-                    })
-                    .catch(err => console.error('Failed to fetch updated lesson:', err));
+                } else if (data.type === 'lesson' || data.type === 'presentation' || data.type === 'worksheet') {
+                  // Received updated content - use the data directly
+                  console.log(`Received updated ${data.type}:`, data);
+                  if (onLessonUpdated) {
+                    const content = data.lesson || data.presentation || data.worksheet;
+                    console.log('Updated content:', content);
+                    console.log('Content has contentType:', content?.contentType);
+                    
+                    // Fetch full data with images from the appropriate endpoint
+                    const fetchEndpoint = contentType === 'presentation' 
+                      ? `/api/presentation/${lessonId}`
+                      : contentType === 'worksheet'
+                      ? `/api/worksheet/${lessonId}`
+                      : `/api/lesson/${lessonId}`;
+                    
+                    console.log('Fetching from endpoint:', fetchEndpoint);
+                    
+                    fetch(fetchEndpoint)
+                      .then(res => res.json())
+                      .then(result => {
+                        console.log('Fetch result:', result);
+                        if (result.success && onLessonUpdated) {
+                          const contentData = result.lesson || result.presentation || result.worksheet;
+                          console.log('ChatEditor: Fetched content:', contentData);
+                          console.log('ChatEditor: Fetched content type:', contentData?.contentType);
+                          console.log('ChatEditor: Fetched images:', Object.keys(result.images || {}));
+                          onLessonUpdated(contentData, result.images || {});
+                        } else {
+                          console.error('Fetch failed or no success:', result);
+                        }
+                      })
+                      .catch(err => console.error('Failed to fetch updated content:', err));
+                  }
                 } else if (data.type === 'image') {
                   // Handle new images as they come in
                   console.log('Received new image:', data.key);

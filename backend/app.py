@@ -316,6 +316,12 @@ def edit_lesson(lesson_id):
                 edit_request
             )
             
+            # Ensure contentType and id are preserved
+            if 'contentType' not in updated_lesson:
+                updated_lesson['contentType'] = 'lesson'
+            if 'id' not in updated_lesson:
+                updated_lesson['id'] = lesson_id
+            
             print(f"Edit processed. Image sections to regenerate: {len(image_sections)}")
             print(f"Image sections: {image_sections}")
             
@@ -673,6 +679,194 @@ def download_worksheet(worksheet_id):
         import traceback
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
+
+# ==================== Edit Endpoints for Presentations and Worksheets ====================
+
+@app.route('/api/edit-presentation/<presentation_id>', methods=['POST'])
+def edit_presentation(presentation_id):
+    """Edit a presentation based on natural language instructions with streaming updates"""
+    data = request.json
+    edit_request = data.get('request') if data else None
+    
+    if not edit_request:
+        return jsonify({"error": "Edit request is required"}), 400
+    
+    def generate():
+        try:
+            yield f"data: {json.dumps({'type': 'status', 'message': '📂 Loading presentation from library...'})}\n\n"
+            
+            if presentation_id not in presentations_store:
+                resource = firebase_service.get_resource(presentation_id)
+                if not resource:
+                    yield f"data: {json.dumps({'type': 'error', 'message': 'Presentation not found'})}\n\n"
+                    return
+                
+                presentations_store[presentation_id] = {
+                    'data': resource.get('content', {}),
+                    'images': resource.get('images', {}),
+                    'image_generation_status': {}
+                }
+            
+            presentation_store = presentations_store[presentation_id]
+            current_presentation = presentation_store['data']
+            
+            yield f"data: {json.dumps({'type': 'status', 'message': '🤖 Analyzing your request...'})}\n\n"
+            
+            updated_presentation, image_sections = agentic_editor.process_edit_request(
+                current_presentation, 
+                edit_request
+            )
+            
+            # Ensure contentType and id are preserved
+            if 'contentType' not in updated_presentation:
+                updated_presentation['contentType'] = 'presentation'
+            if 'id' not in updated_presentation:
+                updated_presentation['id'] = presentation_id
+            
+            yield f"data: {json.dumps({'type': 'status', 'message': '✏️ Applying changes to presentation...'})}\n\n"
+            
+            presentation_store['data'] = updated_presentation
+            
+            new_images = {}
+            if image_sections:
+                yield f"data: {json.dumps({'type': 'status', 'message': f'🎨 Generating {len(image_sections)} new image(s)...'})}\n\n"
+                
+                for i, img_change in enumerate(image_sections):
+                    section = img_change['section']
+                    index = img_change.get('index')
+                    prompt = img_change['prompt']
+                    style = img_change.get('style', 'professional')
+                    
+                    yield f"data: {json.dumps({'type': 'status', 'message': f'🖼️ Generating image {i+1}/{len(image_sections)}...'})}\n\n"
+                    
+                    image_data = image_generator.generate_image(prompt, style)
+                    
+                    if image_data:
+                        if index is not None:
+                            key = f"slide_{index}"
+                        else:
+                            key = section
+                        
+                        presentation_store['images'][key] = image_data
+                        new_images[key] = image_data
+                        
+                        yield f"data: {json.dumps({'type': 'image', 'key': key, 'image': image_data})}\n\n"
+            
+            yield f"data: {json.dumps({'type': 'status', 'message': '💾 Saving changes...'})}\n\n"
+            
+            try:
+                firebase_service.update_resource(presentation_id, {
+                    'content': updated_presentation,
+                    'images': presentation_store['images']
+                })
+                
+                updated_resource = firebase_service.get_resource(presentation_id)
+                if updated_resource:
+                    presentation_store['images'] = updated_resource.get('images', {})
+            except Exception as e:
+                print(f"Warning: Failed to save presentation to Firebase: {e}")
+            
+            yield f"data: {json.dumps({'type': 'presentation', 'presentation': updated_presentation})}\n\n"
+            yield f"data: {json.dumps({'type': 'complete', 'message': '✅ Presentation updated successfully!'})}\n\n"
+            
+        except Exception as e:
+            print(f"Error in edit_presentation: {e}")
+            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+    
+    return Response(generate(), mimetype='text/event-stream')
+
+@app.route('/api/edit-worksheet/<worksheet_id>', methods=['POST'])
+def edit_worksheet(worksheet_id):
+    """Edit a worksheet based on natural language instructions with streaming updates"""
+    data = request.json
+    edit_request = data.get('request') if data else None
+    
+    if not edit_request:
+        return jsonify({"error": "Edit request is required"}), 400
+    
+    def generate():
+        try:
+            yield f"data: {json.dumps({'type': 'status', 'message': '📂 Loading worksheet from library...'})}\n\n"
+            
+            if worksheet_id not in worksheets_store:
+                resource = firebase_service.get_resource(worksheet_id)
+                if not resource:
+                    yield f"data: {json.dumps({'type': 'error', 'message': 'Worksheet not found'})}\n\n"
+                    return
+                
+                worksheets_store[worksheet_id] = {
+                    'data': resource.get('content', {}),
+                    'images': resource.get('images', {}),
+                    'image_generation_status': {}
+                }
+            
+            worksheet_store = worksheets_store[worksheet_id]
+            current_worksheet = worksheet_store['data']
+            
+            yield f"data: {json.dumps({'type': 'status', 'message': '🤖 Analyzing your request...'})}\n\n"
+            
+            updated_worksheet, image_sections = agentic_editor.process_edit_request(
+                current_worksheet, 
+                edit_request
+            )
+            
+            # Ensure contentType and id are preserved
+            if 'contentType' not in updated_worksheet:
+                updated_worksheet['contentType'] = 'worksheet'
+            if 'id' not in updated_worksheet:
+                updated_worksheet['id'] = worksheet_id
+            
+            yield f"data: {json.dumps({'type': 'status', 'message': '✏️ Applying changes to worksheet...'})}\n\n"
+            
+            worksheet_store['data'] = updated_worksheet
+            
+            new_images = {}
+            if image_sections:
+                yield f"data: {json.dumps({'type': 'status', 'message': f'🎨 Generating {len(image_sections)} new image(s)...'})}\n\n"
+                
+                for i, img_change in enumerate(image_sections):
+                    section = img_change['section']
+                    index = img_change.get('index')
+                    prompt = img_change['prompt']
+                    style = img_change.get('style', 'educational')
+                    
+                    yield f"data: {json.dumps({'type': 'status', 'message': f'🖼️ Generating image {i+1}/{len(image_sections)}...'})}\n\n"
+                    
+                    image_data = image_generator.generate_image(prompt, style)
+                    
+                    if image_data:
+                        if index is not None:
+                            key = f"section_{index}"
+                        else:
+                            key = section
+                        
+                        worksheet_store['images'][key] = image_data
+                        new_images[key] = image_data
+                        
+                        yield f"data: {json.dumps({'type': 'image', 'key': key, 'image': image_data})}\n\n"
+            
+            yield f"data: {json.dumps({'type': 'status', 'message': '💾 Saving changes...'})}\n\n"
+            
+            try:
+                firebase_service.update_resource(worksheet_id, {
+                    'content': updated_worksheet,
+                    'images': worksheet_store['images']
+                })
+                
+                updated_resource = firebase_service.get_resource(worksheet_id)
+                if updated_resource:
+                    worksheet_store['images'] = updated_resource.get('images', {})
+            except Exception as e:
+                print(f"Warning: Failed to save worksheet to Firebase: {e}")
+            
+            yield f"data: {json.dumps({'type': 'worksheet', 'worksheet': updated_worksheet})}\n\n"
+            yield f"data: {json.dumps({'type': 'complete', 'message': '✅ Worksheet updated successfully!'})}\n\n"
+            
+        except Exception as e:
+            print(f"Error in edit_worksheet: {e}")
+            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+    
+    return Response(generate(), mimetype='text/event-stream')
 
 if __name__ == '__main__':
     import sys

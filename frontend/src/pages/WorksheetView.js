@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import WorksheetViewer from '../components/WorksheetViewer';
+import ChatEditor from '../components/ChatEditor';
 import AssignButton from '../components/AssignButton';
 import SaveButton from '../components/SaveButton';
 import resourceService from '../services/resourceService';
@@ -13,6 +14,7 @@ function WorksheetView() {
   const [images, setImages] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     loadWorksheet();
@@ -74,9 +76,49 @@ function WorksheetView() {
         </div>
       </div>
 
-      {/* Main Content - Full Width */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <WorksheetViewer worksheet={worksheet} images={images} />
+      {/* Desktop Layout - Side by side */}
+      <main className="hidden lg:block max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Worksheet Content - 2/3 width */}
+          <div className="lg:col-span-2">
+            <WorksheetViewer worksheet={worksheet} images={images} isProcessing={isProcessing} />
+          </div>
+
+          {/* Chat Editor - 1/3 width */}
+          <div className="lg:col-span-1">
+            <ChatEditor
+              lessonId={worksheetId}
+              contentType="worksheet"
+              onLessonUpdated={(updatedWorksheet, updatedImages) => {
+                setWorksheet(updatedWorksheet);
+                setImages(updatedImages);
+              }}
+              onProcessingChange={setIsProcessing}
+            />
+          </div>
+        </div>
+      </main>
+
+      {/* Mobile Layout - ChatGPT style */}
+      <main className="lg:hidden flex flex-col" style={{ height: 'calc(100vh - 9rem)' }}>
+        {/* Worksheet Content - Scrollable */}
+        <div className="flex-1 overflow-y-auto px-4 py-4">
+          <WorksheetViewer worksheet={worksheet} images={images} isProcessing={isProcessing} />
+        </div>
+
+        {/* Chat Editor - Fixed at bottom */}
+        <div className="border-t border-gray-200 bg-white safe-bottom">
+          <ChatEditor
+            lessonId={worksheetId}
+            contentType="worksheet"
+            onLessonUpdated={(updatedWorksheet, updatedImages) => {
+              setWorksheet(updatedWorksheet);
+              setImages(updatedImages);
+            }}
+            onProcessingChange={setIsProcessing}
+            isMobile={true}
+          />
+        </div>
       </main>
     </>
   );

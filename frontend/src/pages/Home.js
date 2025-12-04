@@ -143,9 +143,9 @@ function Home() {
 
           {/* Desktop Layout - Side by side */}
           <main className="hidden lg:block max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className={`grid grid-cols-1 ${isPresentation || isWorksheet ? 'lg:grid-cols-1' : 'lg:grid-cols-3'} gap-6`}>
-              {/* Content */}
-              <div className={isPresentation || isWorksheet ? '' : 'lg:col-span-2'}>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Content - 2/3 width */}
+              <div className="lg:col-span-2">
                 {isPresentation ? (
                   <PresentationViewer presentation={currentLesson} images={lessonImages} isProcessing={isProcessing} />
                 ) : isWorksheet ? (
@@ -155,16 +155,15 @@ function Home() {
                 )}
               </div>
 
-              {/* Chat Editor - Only for lessons */}
-              {!isPresentation && !isWorksheet && (
-                <div className="lg:col-span-1">
-                  <ChatEditor
-                    lessonId={currentLesson.id}
-                    onLessonUpdated={handleLessonUpdated}
-                    onProcessingChange={handleProcessingChange}
-                  />
-                </div>
-              )}
+              {/* Chat Editor - 1/3 width - For all content types */}
+              <div className="lg:col-span-1">
+                <ChatEditor
+                  lessonId={currentLesson.id}
+                  contentType={contentType}
+                  onLessonUpdated={handleLessonUpdated}
+                  onProcessingChange={handleProcessingChange}
+                />
+              </div>
             </div>
           </main>
 
@@ -181,17 +180,16 @@ function Home() {
               )}
             </div>
 
-            {/* Chat Editor - Fixed at bottom - Only for lessons */}
-            {!isPresentation && !isWorksheet && (
-              <div className="border-t border-gray-200 bg-white safe-bottom">
-                <ChatEditor
-                  lessonId={currentLesson.id}
-                  onLessonUpdated={handleLessonUpdated}
-                  onProcessingChange={handleProcessingChange}
-                  isMobile={true}
-                />
-              </div>
-            )}
+            {/* Chat Editor - Fixed at bottom - For all content types */}
+            <div className="border-t border-gray-200 bg-white safe-bottom">
+              <ChatEditor
+                lessonId={currentLesson.id}
+                contentType={contentType}
+                onLessonUpdated={handleLessonUpdated}
+                onProcessingChange={handleProcessingChange}
+                isMobile={true}
+              />
+            </div>
           </main>
         </>
       )}
