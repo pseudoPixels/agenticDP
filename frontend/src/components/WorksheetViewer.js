@@ -84,14 +84,14 @@ function WorksheetViewer({ worksheet, images, isProcessing = false }) {
       </div>
 
       {/* Sections */}
-      <div className="space-y-6">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         {sections.map((section, sectionIdx) => {
           const imageKey = `section_${sectionIdx}`;
           const image = images[imageKey];
           const sectionType = section.type || 'short_answer';
 
           return (
-            <div key={sectionIdx} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div key={sectionIdx} className="bg-white border-b border-gray-200 p-6 last:border-b-0">
               <h2 className="text-2xl font-bold text-gray-900 mb-2">{section.title}</h2>
               
               {section.instructions && (
