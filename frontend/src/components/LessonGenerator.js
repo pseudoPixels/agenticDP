@@ -66,9 +66,9 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
     'Lesson Plan',
     'Worksheet',
     'Presentation Deck',
-    'Curriculum',
-    'Flashcards',
-    'Quiz/Assignment'
+    // 'Curriculum',
+    // 'Flashcards',
+    // 'Quiz/Assignment'
   ];
   
   const homeschool_prompts = [
