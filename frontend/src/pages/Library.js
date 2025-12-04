@@ -82,8 +82,11 @@ function Library() {
     // Navigate to the appropriate view based on resource type
     if (resource.resource_type === 'lesson') {
       navigate(`/lesson/${resource.id}`);
+    } else if (resource.resource_type === 'worksheet') {
+      navigate(`/worksheet/${resource.id}`);
+    } else if (resource.resource_type === 'presentation') {
+      navigate(`/presentation/${resource.id}`);
     }
-    // Add more resource type handlers as needed
   };
 
   const handleToggleAssignment = async (resource) => {

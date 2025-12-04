@@ -39,8 +39,14 @@ function SaveButton({ lesson, images, resourceId, onSaved }) {
         });
       } else {
         // Create new resource
+        // Determine resource type from content
+        const contentType = lesson.contentType || 'lesson';
+        const resourceType = contentType === 'presentation' ? 'presentation' 
+                           : contentType === 'worksheet' ? 'worksheet' 
+                           : 'lesson';
+        
         const resourceData = {
-          resource_type: 'lesson',
+          resource_type: resourceType,
           title: lesson.title,
           content: lesson,
           images: images,
@@ -65,6 +71,11 @@ function SaveButton({ lesson, images, resourceId, onSaved }) {
     }
   };
 
+  const contentType = lesson?.contentType || 'lesson';
+  const saveLabel = contentType === 'presentation' ? 'Save Presentation' 
+                  : contentType === 'worksheet' ? 'Save Worksheet' 
+                  : 'Save Lesson';
+
   return (
     <button
       onClick={handleSave}
@@ -88,7 +99,7 @@ function SaveButton({ lesson, images, resourceId, onSaved }) {
       ) : (
         <>
           <Save className="w-4 h-4" />
-          Save Lesson
+          {saveLabel}
         </>
       )}
     </button>
