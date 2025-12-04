@@ -87,13 +87,40 @@ function Home() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
               <div className="flex flex-wrap items-center gap-3">
                 {isPresentation ? (
-                  <button
-                    onClick={handleDownloadPresentation}
-                    className="flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-medium rounded-lg transition-colors"
-                  >
-                    <Download className="w-4 h-4" />
-                    Download PPTX
-                  </button>
+                  <>
+                    <button
+                      onClick={handleDownloadPresentation}
+                      className="flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-medium rounded-lg transition-colors"
+                    >
+                      <Download className="w-4 h-4" />
+                      Download PPTX
+                    </button>
+                    <SaveButton
+                      lesson={currentLesson}
+                      images={lessonImages}
+                      onSaved={handleSaved}
+                    />
+                    {savedResourceId && (
+                      <AssignButton
+                        lesson={currentLesson}
+                        resourceId={savedResourceId}
+                      />
+                    )}
+                  </>
+                ) : isWorksheet ? (
+                  <>
+                    <SaveButton
+                      lesson={currentLesson}
+                      images={lessonImages}
+                      onSaved={handleSaved}
+                    />
+                    {savedResourceId && (
+                      <AssignButton
+                        lesson={currentLesson}
+                        resourceId={savedResourceId}
+                      />
+                    )}
+                  </>
                 ) : (
                   <>
                     <SaveButton
