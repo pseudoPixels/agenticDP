@@ -11,7 +11,7 @@ const RESOURCE_TYPES = [
   { id: 'lesson', label: 'Lessons', icon: BookOpen },
   { id: 'worksheet', label: 'Worksheets', icon: FileText },
   { id: 'presentation', label: 'Presentations', icon: Presentation },
-  { id: 'curriculum', label: 'Curriculum', icon: GraduationCap },
+  // { id: 'curriculum', label: 'Curriculum', icon: GraduationCap },
 ];
 
 function Library() {
