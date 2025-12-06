@@ -43,10 +43,10 @@ function Header() {
             onClick={() => navigate('/')}
             className="flex items-center gap-2 hover:opacity-80 transition-opacity"
           >
-            <div className="w-8 h-8 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-lg">D</span>
+            <div className="w-8 h-8 flex items-center justify-center">
+              <img src="/doodlepad.ico" alt="Doodlepad Logo" className="w-8 h-8 object-contain" />
             </div>
-            <span className="text-base sm:text-lg font-semibold text-gray-900">DoodlePad</span>
+            <span className="text-base sm:text-lg font-semibold text-gray-900">Doodlepad</span>
           </button>
 
           {/* Desktop Navigation */}
