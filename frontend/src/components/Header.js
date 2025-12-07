@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Plus, Library, LogOut, Menu, X, User } from 'lucide-react';
+import { Plus, Library, LogOut, Menu, X, User, HelpCircle, ChevronDown } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 function Header() {
@@ -9,6 +9,7 @@ function Header() {
   const { user, isAuthenticated, signIn, signOut } = useAuth();
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showLearnMoreMenu, setShowLearnMoreMenu] = useState(false);
 
   const handleAuthClick = async () => {
     if (isAuthenticated) {
@@ -62,6 +63,46 @@ function Header() {
               <Plus className="w-4 h-4" />
               Create
             </button>
+
+            {/* Learn More Dropdown - Only shown when not authenticated */}
+            {!isAuthenticated && (
+              <div className="relative">
+                <button
+                  onClick={() => setShowLearnMoreMenu(!showLearnMoreMenu)}
+                  onBlur={() => setTimeout(() => setShowLearnMoreMenu(false), 200)}
+                  className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-colors text-gray-700 hover:bg-gray-50"
+                >
+                  <HelpCircle className="w-4 h-4" />
+                  Learn more
+                  <ChevronDown className="w-4 h-4" />
+                </button>
+
+                {showLearnMoreMenu && (
+                  <div className="absolute top-full mt-2 left-0 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                    <button
+                      onClick={() => {
+                        setShowLearnMoreMenu(false);
+                        // Navigate to how it works section or page
+                        navigate('/#how-it-works');
+                      }}
+                      className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      How it Works
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowLearnMoreMenu(false);
+                        // Navigate to pricing section or page
+                        navigate('/#pricing');
+                      }}
+                      className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      Pricing
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
 
             {isAuthenticated && (
               <button
