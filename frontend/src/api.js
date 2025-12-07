@@ -88,6 +88,13 @@ export const listLessons = async () => {
   return response.data;
 };
 
+export const downloadLesson = async (lessonId) => {
+  const response = await api.get(`/lesson/${lessonId}/download`, {
+    responseType: 'blob'
+  });
+  return response.data;
+};
+
 // ==================== Presentation API ====================
 
 export const generatePresentationStream = async (topic, onUpdate) => {
@@ -150,16 +157,10 @@ export const getPresentation = async (presentationId) => {
 };
 
 export const downloadPresentation = async (presentationId) => {
-  const response = await fetch(`${API_BASE_URL}/presentation/${presentationId}/download`, {
-    method: 'GET',
+  const response = await api.get(`/presentation/${presentationId}/download`, {
+    responseType: 'blob'
   });
-  
-  if (!response.ok) {
-    throw new Error('Failed to download presentation');
-  }
-  
-  const blob = await response.blob();
-  return blob;
+  return response.data;
 };
 
 // ==================== Worksheet API ====================
@@ -224,16 +225,10 @@ export const getWorksheet = async (worksheetId) => {
 };
 
 export const downloadWorksheet = async (worksheetId) => {
-  const response = await fetch(`${API_BASE_URL}/worksheet/${worksheetId}/download`, {
-    method: 'GET',
+  const response = await api.get(`/worksheet/${worksheetId}/download`, {
+    responseType: 'blob'
   });
-  
-  if (!response.ok) {
-    throw new Error('Failed to download worksheet');
-  }
-  
-  const blob = await response.blob();
-  return blob;
+  return response.data;
 };
 
 export default api;

@@ -274,6 +274,41 @@ def get_lesson(lesson_id):
         print(f"Error in get_lesson: {e}")
         return jsonify({"error": str(e)}), 500
 
+@app.route('/api/lesson/<lesson_id>/download', methods=['GET'])
+def download_lesson(lesson_id):
+    """Download lesson as PDF file"""
+    try:
+        # Get lesson data
+        if lesson_id in lessons_store:
+            lesson_store = lessons_store[lesson_id]
+            lesson_data = lesson_store['data']
+            images = lesson_store['images']
+        else:
+            # Try loading from Firebase
+            resource = firebase_service.get_resource(lesson_id)
+            if not resource:
+                return jsonify({"error": "Lesson not found"}), 404
+            lesson_data = resource.get('content', {})
+            images = resource.get('images', {})
+        
+        # Create PDF file
+        print(f"Creating PDF for lesson: {lesson_data.get('title', 'Untitled')}")
+        pdf_stream = lesson_generator.create_pdf(lesson_data, images)
+        
+        # Send file
+        filename = f"{lesson_data.get('title', 'lesson').replace(' ', '_')}.pdf"
+        return Response(
+            pdf_stream.getvalue(),
+            mimetype='application/pdf',
+            headers={'Content-Disposition': f'attachment; filename="{filename}"'}
+        )
+        
+    except Exception as e:
+        print(f"Error downloading lesson: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
 @app.route('/api/edit-lesson/<lesson_id>', methods=['POST'])
 def edit_lesson(lesson_id):
     """Edit a lesson based on natural language instructions with streaming updates"""

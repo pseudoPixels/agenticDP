@@ -1,7 +1,16 @@
 from google import genai
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_JUSTIFY
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image as RLImage, PageBreak, KeepTogether, ListFlowable, ListItem
+from reportlab.lib import colors
+from reportlab.lib.colors import HexColor
 import json
 import re
-from typing import Dict, List, Any
+import io
+import base64
+from typing import Dict, List, Any, Optional
 
 class LessonGeneratorAgent:
     """Agent responsible for generating structured, professional lessons"""
@@ -151,3 +160,212 @@ Return ONLY the JSON, no markdown formatting or extra text."""
             },
             "additional_resources": ["Online tutorials", "Reference books"]
         }
+    
+    def create_pdf(self, lesson_data: Dict[str, Any], images: Dict[str, str]) -> io.BytesIO:
+        """Create a high-quality PDF from lesson data and images"""
+        
+        pdf_buffer = io.BytesIO()
+        doc = SimpleDocTemplate(
+            pdf_buffer,
+            pagesize=letter,
+            rightMargin=0.75*inch,
+            leftMargin=0.75*inch,
+            topMargin=0.75*inch,
+            bottomMargin=0.75*inch
+        )
+        
+        # Container for PDF elements
+        story = []
+        
+        # Define styles
+        styles = getSampleStyleSheet()
+        
+        # Custom styles
+        title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=styles['Heading1'],
+            fontSize=24,
+            textColor=HexColor('#10b981'),  # emerald-500
+            spaceAfter=6,
+            alignment=TA_CENTER,
+            fontName='Helvetica-Bold'
+        )
+        
+        subtitle_style = ParagraphStyle(
+            'CustomSubtitle',
+            parent=styles['Normal'],
+            fontSize=14,
+            textColor=HexColor('#6b7280'),  # gray-500
+            spaceAfter=20,
+            alignment=TA_CENTER,
+            fontName='Helvetica-Oblique'
+        )
+        
+        heading_style = ParagraphStyle(
+            'CustomHeading',
+            parent=styles['Heading2'],
+            fontSize=16,
+            textColor=HexColor('#059669'),  # emerald-600
+            spaceAfter=10,
+            spaceBefore=16,
+            fontName='Helvetica-Bold'
+        )
+        
+        subheading_style = ParagraphStyle(
+            'CustomSubheading',
+            parent=styles['Heading3'],
+            fontSize=14,
+            textColor=HexColor('#047857'),  # emerald-700
+            spaceAfter=8,
+            spaceBefore=12,
+            fontName='Helvetica-Bold'
+        )
+        
+        body_style = ParagraphStyle(
+            'CustomBody',
+            parent=styles['Normal'],
+            fontSize=11,
+            textColor=HexColor('#1f2937'),
+            spaceAfter=10,
+            alignment=TA_JUSTIFY,
+            leading=14,
+            fontName='Helvetica'
+        )
+        
+        # Header
+        story.append(Paragraph(lesson_data.get('title', 'Lesson'), title_style))
+        
+        if lesson_data.get('subtitle'):
+            story.append(Paragraph(lesson_data['subtitle'], subtitle_style))
+        
+        story.append(Spacer(1, 0.2*inch))
+        
+        # Introduction
+        introduction = lesson_data.get('introduction', {})
+        if introduction:
+            story.append(Paragraph('<b>Introduction</b>', heading_style))
+            
+            # Add introduction image if available
+            intro_image = images.get('introduction')
+            if intro_image:
+                img_stream = self._base64_to_stream(intro_image)
+                if img_stream:
+                    try:
+                        img = RLImage(img_stream, width=5*inch, height=3*inch)
+                        story.append(img)
+                        story.append(Spacer(1, 0.15*inch))
+                    except Exception as e:
+                        print(f"Could not add introduction image: {e}")
+            
+            intro_text = introduction.get('text', '')
+            if intro_text:
+                story.append(Paragraph(intro_text, body_style))
+            
+            story.append(Spacer(1, 0.2*inch))
+        
+        # Key Concepts
+        key_concepts = lesson_data.get('key_concepts', [])
+        if key_concepts:
+            story.append(Paragraph('<b>Key Concepts</b>', heading_style))
+            
+            for idx, concept in enumerate(key_concepts):
+                concept_title = concept.get('title', '')
+                concept_desc = concept.get('description', '')
+                
+                if concept_title:
+                    story.append(Paragraph(f'<b>{concept_title}</b>', subheading_style))
+                
+                # Add image for first key concept if available
+                if idx == 0:
+                    concept_image = images.get('key_concept_0')
+                    if concept_image:
+                        img_stream = self._base64_to_stream(concept_image)
+                        if img_stream:
+                            try:
+                                img = RLImage(img_stream, width=4*inch, height=2.5*inch)
+                                story.append(img)
+                                story.append(Spacer(1, 0.1*inch))
+                            except Exception as e:
+                                print(f"Could not add concept image: {e}")
+                
+                if concept_desc:
+                    story.append(Paragraph(concept_desc, body_style))
+                
+                story.append(Spacer(1, 0.15*inch))
+        
+        # Detailed Content
+        detailed_content = lesson_data.get('detailed_content', [])
+        if detailed_content:
+            for section in detailed_content:
+                heading = section.get('heading', '')
+                paragraphs = section.get('paragraphs', [])
+                
+                if heading:
+                    story.append(Paragraph(f'<b>{heading}</b>', heading_style))
+                
+                for para in paragraphs:
+                    if para:
+                        story.append(Paragraph(para, body_style))
+                
+                story.append(Spacer(1, 0.15*inch))
+        
+        # Activities
+        activities = lesson_data.get('activities', {})
+        if activities and activities.get('items'):
+            story.append(Paragraph('<b>Practice Activities</b>', heading_style))
+            
+            for activity in activities['items']:
+                activity_title = activity.get('title', '')
+                activity_desc = activity.get('description', '')
+                activity_type = activity.get('type', '')
+                
+                if activity_title:
+                    type_label = f" ({activity_type})" if activity_type else ""
+                    story.append(Paragraph(f'<b>• {activity_title}{type_label}</b>', subheading_style))
+                
+                if activity_desc:
+                    story.append(Paragraph(activity_desc, body_style))
+                
+                story.append(Spacer(1, 0.1*inch))
+        
+        # Summary
+        summary = lesson_data.get('summary', {})
+        if summary:
+            story.append(Spacer(1, 0.2*inch))
+            story.append(Paragraph('<b>Summary</b>', heading_style))
+            
+            summary_text = summary.get('text', '')
+            if summary_text:
+                story.append(Paragraph(summary_text, body_style))
+            
+            key_points = summary.get('key_points', [])
+            if key_points:
+                story.append(Spacer(1, 0.1*inch))
+                story.append(Paragraph('<b>Key Takeaways:</b>', subheading_style))
+                for point in key_points:
+                    story.append(Paragraph(f'• {point}', body_style))
+        
+        # Additional Resources
+        additional_resources = lesson_data.get('additional_resources', [])
+        if additional_resources:
+            story.append(Spacer(1, 0.2*inch))
+            story.append(Paragraph('<b>Additional Resources</b>', heading_style))
+            for resource in additional_resources:
+                story.append(Paragraph(f'• {resource}', body_style))
+        
+        # Build PDF
+        doc.build(story)
+        pdf_buffer.seek(0)
+        
+        return pdf_buffer
+    
+    def _base64_to_stream(self, base64_data: str) -> Optional[io.BytesIO]:
+        """Convert base64 image data to BytesIO stream"""
+        try:
+            if ',' in base64_data:
+                base64_data = base64_data.split(',')[1]
+            image_bytes = base64.b64decode(base64_data)
+            return io.BytesIO(image_bytes)
+        except Exception as e:
+            print(f"Error converting base64 to stream: {e}")
+            return None

@@ -1,5 +1,6 @@
 import React from 'react';
 import { FileText, Download, Clock, BookOpen } from 'lucide-react';
+import { downloadWorksheet } from '../api';
 
 function WorksheetViewer({ worksheet, images, isProcessing = false }) {
   if (!worksheet) return null;
@@ -8,10 +9,7 @@ function WorksheetViewer({ worksheet, images, isProcessing = false }) {
 
   const handleDownload = async () => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/worksheet/${worksheet.id}/download`);
-      if (!response.ok) throw new Error('Download failed');
-      
-      const blob = await response.blob();
+      const blob = await downloadWorksheet(worksheet.id);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
