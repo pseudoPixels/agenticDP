@@ -82,8 +82,7 @@ function Header() {
                     <button
                       onClick={() => {
                         setShowLearnMoreMenu(false);
-                        // Navigate to how it works section or page
-                        navigate('/#how-it-works');
+                        navigate('/how-it-works');
                       }}
                       className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                     >
@@ -92,8 +91,7 @@ function Header() {
                     <button
                       onClick={() => {
                         setShowLearnMoreMenu(false);
-                        // Navigate to pricing section or page
-                        navigate('/#pricing');
+                        navigate('/pricing');
                       }}
                       className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                     >

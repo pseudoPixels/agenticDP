@@ -7,6 +7,8 @@ import Library from './pages/Library';
 import LessonView from './pages/LessonView';
 import WorksheetView from './pages/WorksheetView';
 import PresentationView from './pages/PresentationView';
+import HowItWorks from './pages/HowItWorks';
+import Pricing from './pages/Pricing';
 import posthog from './posthog';
 
 // Component to track page views
@@ -30,6 +32,8 @@ function AppRouter() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/library" element={<Library />} />
+            <Route path="/how-it-works" element={<HowItWorks />} />
+            <Route path="/pricing" element={<Pricing />} />
             <Route path="/lesson/:lessonId" element={<LessonView />} />
             <Route path="/worksheet/:worksheetId" element={<WorksheetView />} />
             <Route path="/presentation/:presentationId" element={<PresentationView />} />
