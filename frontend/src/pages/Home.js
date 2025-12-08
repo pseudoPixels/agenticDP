@@ -8,9 +8,14 @@ import ChatEditor from '../components/ChatEditor';
 import SaveButton from '../components/SaveButton';
 import AssignButton from '../components/AssignButton';
 import DownloadButton from '../components/DownloadButton';
+import PaywallModal from '../components/PaywallModal';
 import { downloadPresentation } from '../api';
+import { useSubscription } from '../contexts/SubscriptionContext';
+import { useAuth } from '../contexts/AuthContext';
 
 function Home() {
+  const { user } = useAuth();
+  const { showPaywall, setShowPaywall } = useSubscription();
   const [currentLesson, setCurrentLesson] = useState(null);
   const [lessonImages, setLessonImages] = useState({});
   const [isGenerating, setIsGenerating] = useState(false);
@@ -45,7 +50,8 @@ function Home() {
     if (!currentLesson || !currentLesson.id) return;
     
     try {
-      const blob = await downloadPresentation(currentLesson.id);
+      const userId = user?.uid || null;
+      const blob = await downloadPresentation(currentLesson.id, userId);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -56,7 +62,11 @@ function Home() {
       document.body.removeChild(a);
     } catch (error) {
       console.error('Error downloading presentation:', error);
-      alert('Failed to download presentation. Please try again.');
+      if (error.response?.data?.error === 'subscription_required') {
+        setShowPaywall(true);
+      } else {
+        alert('Failed to download presentation. Please try again.');
+      }
     }
   };
 
@@ -193,6 +203,9 @@ function Home() {
           </main>
         </>
       )}
+      
+      {/* Paywall Modal */}
+      <PaywallModal isOpen={showPaywall} onClose={() => setShowPaywall(false)} />
     </>
   );
 }

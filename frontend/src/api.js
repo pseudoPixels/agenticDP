@@ -14,13 +14,13 @@ export const generateLesson = async (topic) => {
   return response.data;
 };
 
-export const generateLessonStream = async (topic, onUpdate) => {
+export const generateLessonStream = async (topic, userId, onUpdate) => {
   const response = await fetch(`${API_BASE_URL}/generate-lesson-stream`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ topic }),
+    body: JSON.stringify({ topic, user_id: userId }),
   });
 
   if (!response.ok) {
@@ -88,8 +88,9 @@ export const listLessons = async () => {
   return response.data;
 };
 
-export const downloadLesson = async (lessonId) => {
+export const downloadLesson = async (lessonId, userId) => {
   const response = await api.get(`/lesson/${lessonId}/download`, {
+    params: { user_id: userId },
     responseType: 'blob'
   });
   return response.data;
@@ -97,13 +98,13 @@ export const downloadLesson = async (lessonId) => {
 
 // ==================== Presentation API ====================
 
-export const generatePresentationStream = async (topic, onUpdate) => {
+export const generatePresentationStream = async (topic, userId, onUpdate) => {
   const response = await fetch(`${API_BASE_URL}/generate-presentation-stream`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ topic }),
+    body: JSON.stringify({ topic, user_id: userId }),
   });
 
   if (!response.ok) {
@@ -156,8 +157,9 @@ export const getPresentation = async (presentationId) => {
   return response.data;
 };
 
-export const downloadPresentation = async (presentationId) => {
+export const downloadPresentation = async (presentationId, userId) => {
   const response = await api.get(`/presentation/${presentationId}/download`, {
+    params: { user_id: userId },
     responseType: 'blob'
   });
   return response.data;
@@ -165,13 +167,13 @@ export const downloadPresentation = async (presentationId) => {
 
 // ==================== Worksheet API ====================
 
-export const generateWorksheetStream = async (topic, onUpdate) => {
+export const generateWorksheetStream = async (topic, userId, onUpdate) => {
   const response = await fetch(`${API_BASE_URL}/generate-worksheet-stream`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ topic }),
+    body: JSON.stringify({ topic, user_id: userId }),
   });
 
   if (!response.ok) {
@@ -224,8 +226,9 @@ export const getWorksheet = async (worksheetId) => {
   return response.data;
 };
 
-export const downloadWorksheet = async (worksheetId) => {
+export const downloadWorksheet = async (worksheetId, userId) => {
   const response = await api.get(`/worksheet/${worksheetId}/download`, {
+    params: { user_id: userId },
     responseType: 'blob'
   });
   return response.data;

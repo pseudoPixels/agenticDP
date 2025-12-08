@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
 import { Download, Loader2 } from 'lucide-react';
 import { downloadLesson } from '../api';
+import { useAuth } from '../contexts/AuthContext';
+import { useSubscription } from '../contexts/SubscriptionContext';
 
 function DownloadButton({ lesson }) {
+  const { user } = useAuth();
+  const { setShowPaywall } = useSubscription();
   const [isDownloading, setIsDownloading] = useState(false);
 
   const handleDownload = async () => {
@@ -10,7 +14,8 @@ function DownloadButton({ lesson }) {
     
     try {
       setIsDownloading(true);
-      const blob = await downloadLesson(lesson.id);
+      const userId = user?.uid || null;
+      const blob = await downloadLesson(lesson.id, userId);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -21,7 +26,12 @@ function DownloadButton({ lesson }) {
       document.body.removeChild(a);
     } catch (error) {
       console.error('Error downloading lesson:', error);
-      alert('Failed to download lesson. Please try again.');
+      // Check if it's a subscription error
+      if (error.response?.data?.error === 'subscription_required') {
+        setShowPaywall(true);
+      } else {
+        alert('Failed to download lesson. Please try again.');
+      }
     } finally {
       setIsDownloading(false);
     }

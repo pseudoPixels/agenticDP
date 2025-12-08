@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Plus, Library, LogOut, Menu, X, User, HelpCircle, ChevronDown } from 'lucide-react';
+import { Plus, Library, LogOut, Menu, X, User, HelpCircle, ChevronDown, Clock, Crown } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useSubscription } from '../contexts/SubscriptionContext';
 
 function Header() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, isAuthenticated, signIn, signOut } = useAuth();
+  const { subscriptionStatus, isTrialActive, isLifetime, daysRemaining, createPortalSession } = useSubscription();
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showLearnMoreMenu, setShowLearnMoreMenu] = useState(false);
@@ -136,11 +138,50 @@ function Header() {
                 </button>
 
                 {showUserMenu && (
-                  <div className="absolute top-full mt-2 right-0 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                  <div className="absolute top-full mt-2 right-0 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
                     <div className="px-4 py-2 border-b border-gray-200">
                       <p className="text-sm font-medium text-gray-900">{user?.name}</p>
                       <p className="text-xs text-gray-600 truncate">{user?.email}</p>
                     </div>
+                    
+                    {/* Subscription Status */}
+                    {subscriptionStatus && (
+                      <div className="px-4 py-3 border-b border-gray-200">
+                        {isLifetime ? (
+                          <div className="flex items-center gap-2 text-sm">
+                            <Crown className="w-4 h-4 text-yellow-500" />
+                            <span className="font-medium text-gray-900">Lifetime Access</span>
+                          </div>
+                        ) : isTrialActive ? (
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2 text-sm">
+                              <Clock className="w-4 h-4 text-emerald-600" />
+                              <span className="font-medium text-gray-900">Trial Active</span>
+                            </div>
+                            <p className="text-xs text-gray-600">
+                              {daysRemaining} {daysRemaining === 1 ? 'day' : 'days'} remaining
+                            </p>
+                          </div>
+                        ) : subscriptionStatus.subscription_status === 'active' ? (
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2 text-sm">
+                              <Crown className="w-4 h-4 text-emerald-600" />
+                              <span className="font-medium text-gray-900">Pro Subscriber</span>
+                            </div>
+                            <button
+                              onClick={() => {
+                                setShowUserMenu(false);
+                                createPortalSession();
+                              }}
+                              className="text-xs text-emerald-600 hover:text-emerald-700 underline"
+                            >
+                              Manage subscription
+                            </button>
+                          </div>
+                        ) : null}
+                      </div>
+                    )}
+                    
                     <button
                       onClick={handleSignOut}
                       className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2"
@@ -206,6 +247,45 @@ function Header() {
                     <p className="text-sm font-medium text-gray-900">{user?.name}</p>
                     <p className="text-xs text-gray-600 truncate">{user?.email}</p>
                   </div>
+                  
+                  {/* Subscription Status - Mobile */}
+                  {subscriptionStatus && (
+                    <div className="px-4 py-2 mb-2">
+                      {isLifetime ? (
+                        <div className="flex items-center gap-2 text-sm">
+                          <Crown className="w-4 h-4 text-yellow-500" />
+                          <span className="font-medium text-gray-900">Lifetime Access</span>
+                        </div>
+                      ) : isTrialActive ? (
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 text-sm">
+                            <Clock className="w-4 h-4 text-emerald-600" />
+                            <span className="font-medium text-gray-900">Trial Active</span>
+                          </div>
+                          <p className="text-xs text-gray-600">
+                            {daysRemaining} {daysRemaining === 1 ? 'day' : 'days'} remaining
+                          </p>
+                        </div>
+                      ) : subscriptionStatus.subscription_status === 'active' ? (
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 text-sm">
+                            <Crown className="w-4 h-4 text-emerald-600" />
+                            <span className="font-medium text-gray-900">Pro Subscriber</span>
+                          </div>
+                          <button
+                            onClick={() => {
+                              setShowMobileMenu(false);
+                              createPortalSession();
+                            }}
+                            className="text-xs text-emerald-600 hover:text-emerald-700 underline"
+                          >
+                            Manage subscription
+                          </button>
+                        </div>
+                      ) : null}
+                    </div>
+                  )}
+                  
                   <button
                     onClick={() => {
                       handleSignOut();

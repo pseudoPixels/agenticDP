@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Sparkles, Loader2, CheckCircle2, Circle, ChevronDown, Check, Lightbulb } from 'lucide-react';
 import { generateLessonStream, generatePresentationStream, generateWorksheetStream } from '../api';
+import { useAuth } from '../contexts/AuthContext';
+import { useSubscription } from '../contexts/SubscriptionContext';
 
 const AGENT_STEPS_BY_TYPE = {
   'Lesson Plan': [
@@ -70,6 +72,8 @@ function AgentProgress({ currentStep, completedSteps, contentType }) {
 }
 
 function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
+  const { user } = useAuth();
+  const { setShowPaywall } = useSubscription();
   const [topic, setTopic] = useState('');
   const [status, setStatus] = useState('');
   const [agentStep, setAgentStep] = useState('');
@@ -160,8 +164,10 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
 
     try {
       // Route to appropriate generator based on content type
+      const userId = user?.uid || null;
+      
       if (selectedType === 'Presentation Deck') {
-        await generatePresentationStream(topic, (data) => {
+        await generatePresentationStream(topic, userId, (data) => {
           console.log('Presentation stream data:', data.type, data);
           if (data.type === 'init') {
             // Initial connection established
@@ -192,14 +198,22 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
             }, 3000);
           } else if (data.type === 'error') {
             console.error('Error generating presentation:', data.error);
-            setStatus('Error generating presentation. Please try again.');
-            setIsGenerating(false);
-            setAgentStep('');
-            setCompletedSteps([]);
+            if (data.error === 'subscription_required') {
+              setStatus('');
+              setIsGenerating(false);
+              setAgentStep('');
+              setCompletedSteps([]);
+              setShowPaywall(true);
+            } else {
+              setStatus('Error generating presentation. Please try again.');
+              setIsGenerating(false);
+              setAgentStep('');
+              setCompletedSteps([]);
+            }
           }
         });
       } else if (selectedType === 'Worksheet') {
-        await generateWorksheetStream(topic, (data) => {
+        await generateWorksheetStream(topic, userId, (data) => {
           console.log('Worksheet stream data:', data.type, data);
           if (data.type === 'init') {
             // Initial connection established
@@ -230,15 +244,23 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
             }, 3000);
           } else if (data.type === 'error') {
             console.error('Error generating worksheet:', data.error);
-            setStatus('Error generating worksheet. Please try again.');
-            setIsGenerating(false);
-            setAgentStep('');
-            setCompletedSteps([]);
+            if (data.error === 'subscription_required') {
+              setStatus('');
+              setIsGenerating(false);
+              setAgentStep('');
+              setCompletedSteps([]);
+              setShowPaywall(true);
+            } else {
+              setStatus('Error generating worksheet. Please try again.');
+              setIsGenerating(false);
+              setAgentStep('');
+              setCompletedSteps([]);
+            }
           }
         });
       } else {
         // Default to lesson generation
-        await generateLessonStream(topic, (data) => {
+        await generateLessonStream(topic, userId, (data) => {
           if (data.type === 'init') {
             // Initial connection established
           } else if (data.type === 'lesson') {
@@ -268,10 +290,18 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
             }, 3000);
           } else if (data.type === 'error') {
             console.error('Error generating lesson:', data.error);
-            setStatus('Error generating lesson. Please try again.');
-            setIsGenerating(false);
-            setAgentStep('');
-            setCompletedSteps([]);
+            if (data.error === 'subscription_required') {
+              setStatus('');
+              setIsGenerating(false);
+              setAgentStep('');
+              setCompletedSteps([]);
+              setShowPaywall(true);
+            } else {
+              setStatus('Error generating lesson. Please try again.');
+              setIsGenerating(false);
+              setAgentStep('');
+              setCompletedSteps([]);
+            }
           }
         });
       }

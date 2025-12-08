@@ -76,6 +76,24 @@ export const AuthProvider = ({ children }) => {
     try {
       const userData = await authService.signInWithGoogle();
       setUser(userData);
+      
+      // Initialize trial for new users
+      try {
+        const token = await authService.getToken();
+        if (token) {
+          await fetch('/api/subscription/initialize-trial', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            }
+          });
+        }
+      } catch (trialError) {
+        console.error('Error initializing trial:', trialError);
+        // Don't block sign in if trial initialization fails
+      }
+      
       return userData;
     } catch (error) {
       console.error('Sign in error:', error);

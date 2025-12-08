@@ -15,7 +15,9 @@ from agents import LessonGeneratorAgent, ImageGeneratorAgent, LessonEditorAgent,
 from agents.agentic_editor import AgenticLessonEditor
 from routes.resources import resources_bp
 from routes.students import students_bp
+from routes.subscription import subscription_bp, check_subscription_access
 from services.firebase_service import FirebaseService
+from services.subscription_service import SubscriptionService
 
 app = Flask(__name__)
 CORS(app)
@@ -23,6 +25,7 @@ CORS(app)
 # Register blueprints
 app.register_blueprint(resources_bp, url_prefix='/api')
 app.register_blueprint(students_bp, url_prefix='/api')
+app.register_blueprint(subscription_bp, url_prefix='/api')
 
 # Initialize agents
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
@@ -38,6 +41,7 @@ worksheet_generator = WorksheetGeneratorAgent(GEMINI_API_KEY)
 
 # Initialize Firebase service
 firebase_service = FirebaseService()
+subscription_service = SubscriptionService(firebase_service)
 
 # In-memory storage for lessons, presentations, and worksheets (in production, use a database)
 lessons_store: Dict[str, Dict[str, Any]] = {}
@@ -93,10 +97,18 @@ def generate_lesson_stream():
             # Get the request data before entering the generator
             request_data = request.get_json()
             topic = request_data.get('topic')
+            user_id = request_data.get('user_id')  # Frontend should send this
             
             if not topic:
                 yield f"data: {json.dumps({'error': 'Topic is required'})}\n\n"
                 return
+            
+            # Check subscription access
+            if user_id:
+                has_access, status_info = check_subscription_access(user_id)
+                if not has_access:
+                    yield f"data: {json.dumps({'type': 'error', 'error': 'subscription_required', 'message': 'Your trial has ended. Please subscribe to continue creating content.', 'status': status_info})}\n\n"
+                    return
             
             # Generate a unique lesson ID
             lesson_id = str(uuid.uuid4())
@@ -278,6 +290,17 @@ def get_lesson(lesson_id):
 def download_lesson(lesson_id):
     """Download lesson as PDF file"""
     try:
+        # Check subscription access
+        user_id = request.args.get('user_id')
+        if user_id:
+            has_access, status_info = check_subscription_access(user_id)
+            if not has_access:
+                return jsonify({
+                    "error": "subscription_required",
+                    "message": "Your trial has ended. Please subscribe to download content.",
+                    "status": status_info
+                }), 403
+        
         # Get lesson data
         if lesson_id in lessons_store:
             lesson_store = lessons_store[lesson_id]
@@ -463,12 +486,19 @@ def generate_presentation_stream():
     # Extract request data BEFORE generator (inside request context)
     data = request.json
     topic = data.get('topic') if data else None
+    user_id = data.get('user_id') if data else None
     
     if not topic:
         return jsonify({"error": "Topic is required"}), 400
     
     def generate():
         try:
+            # Check subscription access
+            if user_id:
+                has_access, status_info = check_subscription_access(user_id)
+                if not has_access:
+                    yield f"data: {json.dumps({'type': 'error', 'error': 'subscription_required', 'message': 'Your trial has ended. Please subscribe to continue creating content.', 'status': status_info})}\n\n"
+                    return
             
             # Generate a unique presentation ID
             presentation_id = str(uuid.uuid4())
@@ -554,6 +584,17 @@ def get_presentation(presentation_id):
 def download_presentation(presentation_id):
     """Download presentation as PPTX file"""
     try:
+        # Check subscription access
+        user_id = request.args.get('user_id')
+        if user_id:
+            has_access, status_info = check_subscription_access(user_id)
+            if not has_access:
+                return jsonify({
+                    "error": "subscription_required",
+                    "message": "Your trial has ended. Please subscribe to download content.",
+                    "status": status_info
+                }), 403
+        
         # Get presentation data
         if presentation_id in presentations_store:
             presentation_store = presentations_store[presentation_id]
@@ -593,12 +634,19 @@ def generate_worksheet_stream():
     # Extract request data BEFORE generator (inside request context)
     data = request.json
     topic = data.get('topic') if data else None
+    user_id = data.get('user_id') if data else None
     
     if not topic:
         return jsonify({"error": "Topic is required"}), 400
     
     def generate():
         try:
+            # Check subscription access
+            if user_id:
+                has_access, status_info = check_subscription_access(user_id)
+                if not has_access:
+                    yield f"data: {json.dumps({'type': 'error', 'error': 'subscription_required', 'message': 'Your trial has ended. Please subscribe to continue creating content.', 'status': status_info})}\n\n"
+                    return
             
             # Generate a unique worksheet ID
             worksheet_id = str(uuid.uuid4())
@@ -684,6 +732,17 @@ def get_worksheet(worksheet_id):
 def download_worksheet(worksheet_id):
     """Download worksheet as PDF file"""
     try:
+        # Check subscription access
+        user_id = request.args.get('user_id')
+        if user_id:
+            has_access, status_info = check_subscription_access(user_id)
+            if not has_access:
+                return jsonify({
+                    "error": "subscription_required",
+                    "message": "Your trial has ended. Please subscribe to download content.",
+                    "status": status_info
+                }), 403
+        
         # Get worksheet data
         if worksheet_id in worksheets_store:
             worksheet_store = worksheets_store[worksheet_id]
