@@ -8,7 +8,7 @@ function Header() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, isAuthenticated, signIn, signOut } = useAuth();
-  const { subscriptionStatus, isTrialActive, isLifetime, daysRemaining, createPortalSession } = useSubscription();
+  const { subscriptionStatus, isTrialActive, isLifetime, daysRemaining, createPortalSession, setShowPaywall } = useSubscription();
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showLearnMoreMenu, setShowLearnMoreMenu] = useState(false);
@@ -153,14 +153,26 @@ function Header() {
                             <span className="font-medium text-gray-900">Lifetime Access</span>
                           </div>
                         ) : isTrialActive ? (
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2 text-sm">
-                              <Clock className="w-4 h-4 text-emerald-600" />
-                              <span className="font-medium text-gray-900">Trial Active</span>
+                          <div className="space-y-2">
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2 text-sm">
+                                <Clock className="w-4 h-4 text-emerald-600" />
+                                <span className="font-medium text-gray-900">Trial Active</span>
+                              </div>
+                              <p className="text-xs text-gray-600">
+                                {daysRemaining} {daysRemaining === 1 ? 'day' : 'days'} remaining
+                              </p>
                             </div>
-                            <p className="text-xs text-gray-600">
-                              {daysRemaining} {daysRemaining === 1 ? 'day' : 'days'} remaining
-                            </p>
+                            <button
+                              onClick={() => {
+                                setShowUserMenu(false);
+                                setShowPaywall(true);
+                              }}
+                              className="w-full px-3 py-1.5 bg-gradient-to-r from-emerald-400 to-teal-500 text-white text-xs font-medium rounded-md hover:from-emerald-500 hover:to-teal-600 transition-all flex items-center justify-center gap-1.5"
+                            >
+                              <Crown className="w-3.5 h-3.5" />
+                              Upgrade to Pro
+                            </button>
                           </div>
                         ) : subscriptionStatus.subscription_status === 'active' ? (
                           <div className="space-y-1">
@@ -257,14 +269,26 @@ function Header() {
                           <span className="font-medium text-gray-900">Lifetime Access</span>
                         </div>
                       ) : isTrialActive ? (
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2 text-sm">
-                            <Clock className="w-4 h-4 text-emerald-600" />
-                            <span className="font-medium text-gray-900">Trial Active</span>
+                        <div className="space-y-2">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2 text-sm">
+                              <Clock className="w-4 h-4 text-emerald-600" />
+                              <span className="font-medium text-gray-900">Trial Active</span>
+                            </div>
+                            <p className="text-xs text-gray-600">
+                              {daysRemaining} {daysRemaining === 1 ? 'day' : 'days'} remaining
+                            </p>
                           </div>
-                          <p className="text-xs text-gray-600">
-                            {daysRemaining} {daysRemaining === 1 ? 'day' : 'days'} remaining
-                          </p>
+                          <button
+                            onClick={() => {
+                              setShowMobileMenu(false);
+                              setShowPaywall(true);
+                            }}
+                            className="w-full px-3 py-1.5 bg-gradient-to-r from-emerald-400 to-teal-500 text-white text-xs font-medium rounded-md hover:from-emerald-500 hover:to-teal-600 transition-all flex items-center justify-center gap-1.5"
+                          >
+                            <Crown className="w-3.5 h-3.5" />
+                            Upgrade to Pro
+                          </button>
                         </div>
                       ) : subscriptionStatus.subscription_status === 'active' ? (
                         <div className="space-y-1">

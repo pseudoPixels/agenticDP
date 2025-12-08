@@ -3,7 +3,7 @@ import { X, Check, Sparkles, Crown, Gift } from 'lucide-react';
 import { useSubscription } from '../contexts/SubscriptionContext';
 
 function PaywallModal({ isOpen, onClose }) {
-  const { createCheckoutSession, applyPromoCode, subscriptionStatus } = useSubscription();
+  const { createCheckoutSession, applyPromoCode, subscriptionStatus, isTrialActive } = useSubscription();
   const [showPromoInput, setShowPromoInput] = useState(false);
   const [promoCode, setPromoCode] = useState('');
   const [promoLoading, setPromoLoading] = useState(false);
@@ -68,10 +68,13 @@ function PaywallModal({ isOpen, onClose }) {
             </div>
           </div>
           <h2 className="text-2xl sm:text-3xl font-bold text-center mb-2">
-            Your Trial Has Ended
+            {isTrialActive ? 'Upgrade to Pro' : 'Your Trial Has Ended'}
           </h2>
           <p className="text-center text-emerald-50 text-sm sm:text-base">
-            Continue creating amazing educational content with a subscription
+            {isTrialActive 
+              ? 'Unlock unlimited access to all features'
+              : 'Continue creating amazing educational content with a subscription'
+            }
           </p>
         </div>
 
