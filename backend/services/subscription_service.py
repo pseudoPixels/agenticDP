@@ -175,6 +175,9 @@ class SubscriptionService:
                 raise Exception("STRIPE_MONTHLY_PRICE_ID not configured")
             
             # Create checkout session
+            print(f"Creating checkout session with price_id: {price_id}")
+            print(f"Customer ID: {customer_id}")
+            
             session = stripe.checkout.Session.create(
                 customer=customer_id,
                 payment_method_types=['card'],
@@ -196,42 +199,62 @@ class SubscriptionService:
             )
             
             print(f"✓ Checkout session created for user {user_id}")
+            print(f"Session URL: {session.url}")
             return session.url
+        except stripe.error.StripeError as e:
+            print(f"Stripe API error creating checkout session: {e}")
+            print(f"Error type: {type(e).__name__}")
+            print(f"Error message: {str(e)}")
+            raise Exception(f"Stripe error: {str(e)}")
         except Exception as e:
             print(f"Error creating checkout session: {e}")
+            print(f"Error type: {type(e).__name__}")
+            import traceback
+            traceback.print_exc()
             raise
     
     def _get_or_create_customer(self, user_id: str, user_email: str) -> str:
         """Get or create Stripe customer for user"""
-        # Check if user already has a customer ID
-        user_ref = self.db.collection('users').document(user_id)
-        user_doc = user_ref.get()
-        
-        if user_doc.exists:
-            user_data = user_doc.to_dict()
-            customer_id = user_data.get('stripe_customer_id')
+        try:
+            # Check if user already has a customer ID
+            user_ref = self.db.collection('users').document(user_id)
+            user_doc = user_ref.get()
             
-            if customer_id:
-                # Verify customer exists in Stripe
-                try:
-                    stripe.Customer.retrieve(customer_id)
-                    return customer_id
-                except:
-                    pass
-        
-        # Create new customer
-        customer = stripe.Customer.create(
-            email=user_email,
-            metadata={'user_id': user_id}
-        )
-        
-        # Save customer ID
-        user_ref.update({
-            'stripe_customer_id': customer.id,
-            'updated_at': datetime.utcnow()
-        })
-        
-        return customer.id
+            if user_doc.exists:
+                user_data = user_doc.to_dict()
+                customer_id = user_data.get('stripe_customer_id')
+                
+                if customer_id:
+                    # Verify customer exists in Stripe
+                    try:
+                        stripe.Customer.retrieve(customer_id)
+                        print(f"Using existing Stripe customer: {customer_id}")
+                        return customer_id
+                    except stripe.error.StripeError as e:
+                        print(f"Existing customer not found in Stripe: {e}")
+                        pass
+            
+            # Create new customer
+            print(f"Creating new Stripe customer for {user_email}")
+            customer = stripe.Customer.create(
+                email=user_email,
+                metadata={'user_id': user_id}
+            )
+            
+            print(f"Created Stripe customer: {customer.id}")
+            
+            # Save customer ID
+            user_ref.update({
+                'stripe_customer_id': customer.id,
+                'updated_at': datetime.utcnow()
+            })
+            
+            return customer.id
+        except Exception as e:
+            print(f"Error in _get_or_create_customer: {e}")
+            import traceback
+            traceback.print_exc()
+            raise
     
     def create_portal_session(self, user_id: str, return_url: str) -> Optional[str]:
         """
