@@ -18,16 +18,16 @@ function SlideImage({ src, alt }) {
   }
 
   return (
-    <div className="w-full flex items-center justify-center" style={{ maxHeight: 'clamp(12rem, 30vh, 16rem)' }}>
+    <div className="w-full flex items-center justify-center" style={{ maxHeight: 'clamp(6rem, 18vh, 12rem)' }}>
       {loading && !error && (
-        <div className="w-full bg-gradient-to-br from-gray-100 to-gray-200 animate-pulse flex items-center justify-center rounded-lg" style={{ height: 'clamp(10rem, 25vh, 12rem)' }}>
-          <ImageIcon style={{ width: 'clamp(2rem, 8vw, 4rem)', height: 'clamp(2rem, 8vw, 4rem)' }} className="text-gray-400" />
+        <div className="w-full bg-gradient-to-br from-gray-100 to-gray-200 animate-pulse flex items-center justify-center rounded-lg" style={{ height: 'clamp(4rem, 15vh, 8rem)' }}>
+          <ImageIcon style={{ width: 'clamp(1.25rem, 5vw, 2.5rem)', height: 'clamp(1.25rem, 5vw, 2.5rem)' }} className="text-gray-400" />
         </div>
       )}
       {error && (
-        <div className="w-full bg-red-50 border border-red-200 flex flex-col items-center justify-center rounded-lg" style={{ height: 'clamp(10rem, 25vh, 12rem)' }}>
-          <ImageIcon style={{ width: 'clamp(2rem, 8vw, 4rem)', height: 'clamp(2rem, 8vw, 4rem)' }} className="text-red-400 mb-2" />
-          <p className="text-red-600" style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Failed to load image</p>
+        <div className="w-full bg-red-50 border border-red-200 flex flex-col items-center justify-center rounded-lg" style={{ height: 'clamp(4rem, 15vh, 8rem)' }}>
+          <ImageIcon style={{ width: 'clamp(1.25rem, 5vw, 2.5rem)', height: 'clamp(1.25rem, 5vw, 2.5rem)' }} className="text-red-400 mb-2" />
+          <p className="text-red-600" style={{ fontSize: 'clamp(0.5rem, 1.5vw, 0.75rem)' }}>Failed to load image</p>
         </div>
       )}
       <img
@@ -35,7 +35,7 @@ function SlideImage({ src, alt }) {
         src={src}
         alt={alt}
         className={`max-w-full object-contain rounded-lg animate-fade-in ${loading || error ? 'hidden' : ''}`}
-        style={{ maxHeight: 'clamp(12rem, 30vh, 16rem)' }}
+        style={{ maxHeight: 'clamp(6rem, 18vh, 12rem)' }}
         onLoad={() => setLoading(false)}
         onError={(e) => {
           console.error('Image load error:', src, e);
@@ -49,11 +49,11 @@ function SlideImage({ src, alt }) {
 
 function TitleSlide({ slide, image }) {
   return (
-    <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border-2 border-emerald-200 rounded-xl h-full flex flex-col justify-center" style={{ padding: 'clamp(1rem, 3vw, 1.5rem)' }}>
-      <div className="text-center" style={{ marginBottom: 'clamp(0.75rem, 2vh, 1rem)' }}>
-        <h2 className="font-bold text-gray-900" style={{ fontSize: 'clamp(1.25rem, 4vw, 1.875rem)', marginBottom: 'clamp(0.25rem, 1vh, 0.5rem)' }}>{slide.title}</h2>
+    <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border-2 border-emerald-200 rounded-xl h-full flex flex-col justify-center" style={{ padding: 'clamp(0.5rem, 2vw, 1.5rem)' }}>
+      <div className="text-center" style={{ marginBottom: 'clamp(0.4rem, 1.2vh, 0.8rem)' }}>
+        <h2 className="font-bold text-gray-900" style={{ fontSize: 'clamp(0.75rem, 2.8vw, 1.875rem)', marginBottom: 'clamp(0.2rem, 0.6vh, 0.4rem)', lineHeight: '1.25' }}>{slide.title}</h2>
         {slide.content && (
-          <p className="text-gray-600" style={{ fontSize: 'clamp(1rem, 3vw, 1.25rem)' }}>{slide.content}</p>
+          <p className="text-gray-600" style={{ fontSize: 'clamp(0.625rem, 2vw, 1.25rem)', lineHeight: '1.35' }}>{slide.content}</p>
         )}
       </div>
       {image && <SlideImage src={image} alt={slide.title} />}
@@ -63,8 +63,8 @@ function TitleSlide({ slide, image }) {
 
 function SectionSlide({ slide, image }) {
   return (
-    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl h-full flex flex-col justify-center" style={{ padding: 'clamp(1rem, 3vw, 1.5rem)' }}>
-      <h2 className="font-bold text-center text-gray-900" style={{ fontSize: 'clamp(1.25rem, 4vw, 1.875rem)', marginBottom: 'clamp(0.75rem, 2vh, 1rem)' }}>{slide.title}</h2>
+    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl h-full flex flex-col justify-center" style={{ padding: 'clamp(0.5rem, 2vw, 1.5rem)' }}>
+      <h2 className="font-bold text-center text-gray-900" style={{ fontSize: 'clamp(0.75rem, 2.8vw, 1.875rem)', marginBottom: 'clamp(0.4rem, 1.2vh, 0.8rem)', lineHeight: '1.25' }}>{slide.title}</h2>
       {image && <SlideImage src={image} alt={slide.title} />}
     </div>
   );
@@ -140,11 +140,11 @@ function ChartSlide({ slide, image }) {
 
 function ClosingSlide({ slide, image }) {
   return (
-    <div className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-xl h-full flex flex-col justify-center" style={{ padding: 'clamp(1rem, 3vw, 1.5rem)' }}>
-      <div className="text-center" style={{ marginBottom: 'clamp(0.75rem, 2vh, 1rem)' }}>
-        <h2 className="font-bold text-gray-900" style={{ fontSize: 'clamp(1.25rem, 4vw, 1.875rem)', marginBottom: 'clamp(0.25rem, 1vh, 0.5rem)' }}>{slide.title}</h2>
+    <div className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-xl h-full flex flex-col justify-center" style={{ padding: 'clamp(0.5rem, 2vw, 1.5rem)' }}>
+      <div className="text-center" style={{ marginBottom: 'clamp(0.4rem, 1.2vh, 0.8rem)' }}>
+        <h2 className="font-bold text-gray-900" style={{ fontSize: 'clamp(0.75rem, 2.8vw, 1.875rem)', marginBottom: 'clamp(0.2rem, 0.6vh, 0.4rem)', lineHeight: '1.25' }}>{slide.title}</h2>
         {slide.content && (
-          <p className="text-gray-600" style={{ fontSize: 'clamp(1rem, 3vw, 1.25rem)' }}>{slide.content}</p>
+          <p className="text-gray-600" style={{ fontSize: 'clamp(0.625rem, 2vw, 1.25rem)', lineHeight: '1.35' }}>{slide.content}</p>
         )}
       </div>
       {image && <SlideImage src={image} alt={slide.title} />}
