@@ -1,10 +1,90 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, FileText, Presentation, GraduationCap, Trash2, UserPlus, UserCheck, UserX, Users, Grid, List, Search, Calendar, Loader2 } from 'lucide-react';
+import { BookOpen, FileText, Presentation, GraduationCap, Trash2, UserPlus, UserCheck, UserX, Users, Grid, List, Search, Calendar, Loader2, AlertTriangle, X } from 'lucide-react';
 import resourceService from '../services/resourceService';
 import studentService from '../services/studentService';
 
 const DEFAULT_STUDENT_NAME = 'My Student';
+
+// Delete Confirmation Modal Component
+function DeleteConfirmationModal({ isOpen, onClose, onConfirm, resourceTitle }) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 backdrop-blur-sm animate-fadeIn">
+      <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden animate-slideUp">
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors z-10"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
+        {/* Content */}
+        <div className="p-6 sm:p-8">
+          {/* Icon */}
+          <div className="flex items-center justify-center mb-4">
+            <div className="p-3 bg-red-100 rounded-full">
+              <AlertTriangle className="w-8 h-8 text-red-600" />
+            </div>
+          </div>
+
+          {/* Title */}
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 text-center mb-2">
+            Delete Resource?
+          </h2>
+
+          {/* Description */}
+          <p className="text-center text-gray-600 mb-6">
+            Are you sure you want to delete{' '}
+            <span className="font-semibold text-gray-900">"{resourceTitle}"</span>?
+            This action cannot be undone.
+          </p>
+
+          {/* Buttons */}
+          <div className="flex gap-3">
+            <button
+              onClick={onClose}
+              className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={onConfirm}
+              className="flex-1 px-4 py-3 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <style jsx>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes slideUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.2s ease-out;
+        }
+        .animate-slideUp {
+          animation: slideUp 0.3s ease-out;
+        }
+      `}</style>
+    </div>
+  );
+}
 
 const RESOURCE_TYPES = [
   { id: 'all', label: 'All Resources', icon: BookOpen },
@@ -24,6 +104,8 @@ function Library() {
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('newest'); // 'newest', 'oldest', 'title'
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [resourceToDelete, setResourceToDelete] = useState(null);
 
   useEffect(() => {
     loadResources();
@@ -64,18 +146,28 @@ function Library() {
     }
   };
 
-  const handleDelete = async (resourceId) => {
-    if (!window.confirm('Are you sure you want to delete this resource?')) {
-      return;
-    }
+  const handleDelete = (resource) => {
+    setResourceToDelete(resource);
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!resourceToDelete) return;
 
     try {
-      await resourceService.deleteResource(resourceId);
-      setResources(resources.filter(r => r.id !== resourceId));
+      await resourceService.deleteResource(resourceToDelete.id);
+      setResources(resources.filter(r => r.id !== resourceToDelete.id));
+      setDeleteModalOpen(false);
+      setResourceToDelete(null);
     } catch (error) {
       console.error('Error deleting resource:', error);
       alert('Failed to delete resource');
     }
+  };
+
+  const cancelDelete = () => {
+    setDeleteModalOpen(false);
+    setResourceToDelete(null);
   };
 
   const handleOpenResource = (resource) => {
@@ -327,7 +419,7 @@ function Library() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleDelete(resource.id);
+                          handleDelete(resource);
                         }}
                         className="text-white hover:bg-white/20 p-1 rounded transition-colors"
                         title="Delete"
@@ -440,7 +532,7 @@ function Library() {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleDelete(resource.id);
+                        handleDelete(resource);
                       }}
                       className="text-red-600 hover:bg-red-50 p-2 rounded transition-colors"
                       title="Delete"
@@ -454,6 +546,14 @@ function Library() {
           </div>
         )}
       </main>
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={deleteModalOpen}
+        onClose={cancelDelete}
+        onConfirm={confirmDelete}
+        resourceTitle={resourceToDelete?.title || 'this resource'}
+      />
     </div>
   );
 }
