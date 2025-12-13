@@ -56,7 +56,16 @@ function TitleSlide({ slide, image }) {
           <p className="text-gray-600" style={{ fontSize: 'clamp(0.625rem, 2vw, 1.25rem)', lineHeight: '1.35' }}>{slide.content}</p>
         )}
       </div>
-      {image && <SlideImage src={image} alt={slide.title} />}
+      {image && (
+        <div className="w-full flex items-center justify-center" style={{ maxHeight: 'clamp(4rem, 12vh, 10rem)' }}>
+          <img
+            src={image}
+            alt={slide.title}
+            className="max-w-full object-contain rounded-lg"
+            style={{ maxHeight: 'clamp(4rem, 12vh, 10rem)' }}
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -65,7 +74,16 @@ function SectionSlide({ slide, image }) {
   return (
     <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl h-full flex flex-col justify-center" style={{ padding: 'clamp(0.5rem, 2vw, 1.5rem)' }}>
       <h2 className="font-bold text-center text-gray-900" style={{ fontSize: 'clamp(0.75rem, 2.8vw, 1.875rem)', marginBottom: 'clamp(0.4rem, 1.2vh, 0.8rem)', lineHeight: '1.25' }}>{slide.title}</h2>
-      {image && <SlideImage src={image} alt={slide.title} />}
+      {image && (
+        <div className="w-full flex items-center justify-center" style={{ maxHeight: 'clamp(4rem, 12vh, 10rem)' }}>
+          <img
+            src={image}
+            alt={slide.title}
+            className="max-w-full object-contain rounded-lg"
+            style={{ maxHeight: 'clamp(4rem, 12vh, 10rem)' }}
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -147,13 +165,28 @@ function ClosingSlide({ slide, image }) {
           <p className="text-gray-600" style={{ fontSize: 'clamp(0.625rem, 2vw, 1.25rem)', lineHeight: '1.35' }}>{slide.content}</p>
         )}
       </div>
-      {image && <SlideImage src={image} alt={slide.title} />}
+      {image && (
+        <div className="w-full flex items-center justify-center" style={{ maxHeight: 'clamp(4rem, 12vh, 10rem)' }}>
+          <img
+            src={image}
+            alt={slide.title}
+            className="max-w-full object-contain rounded-lg"
+            style={{ maxHeight: 'clamp(4rem, 12vh, 10rem)' }}
+          />
+        </div>
+      )}
     </div>
   );
 }
 
 function PresentationViewer({ presentation, images, isProcessing = false }) {
-  const [viewMode, setViewMode] = useState('slideshow'); // Default to slideshow mode
+  // Default to scroll mode on mobile (screen width < 768px), slideshow on desktop
+  const [viewMode, setViewMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth < 768 ? 'scroll' : 'slideshow';
+    }
+    return 'slideshow';
+  });
   const [currentSlide, setCurrentSlide] = useState(0);
   
   const slides = presentation?.slides || [];
