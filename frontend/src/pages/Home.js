@@ -108,6 +108,7 @@ function Home() {
                     <SaveButton
                       lesson={currentLesson}
                       images={lessonImages}
+                      resourceId={savedResourceId}
                       onSaved={handleSaved}
                     />
                     {savedResourceId && (
@@ -122,6 +123,7 @@ function Home() {
                     <SaveButton
                       lesson={currentLesson}
                       images={lessonImages}
+                      resourceId={savedResourceId}
                       onSaved={handleSaved}
                     />
                     {savedResourceId && (
@@ -136,6 +138,7 @@ function Home() {
                     <SaveButton
                       lesson={currentLesson}
                       images={lessonImages}
+                      resourceId={savedResourceId}
                       onSaved={handleSaved}
                     />
                     <DownloadButton lesson={currentLesson} />
