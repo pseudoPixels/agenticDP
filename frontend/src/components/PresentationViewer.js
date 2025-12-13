@@ -18,23 +18,24 @@ function SlideImage({ src, alt }) {
   }
 
   return (
-    <div className="w-full max-h-64 flex items-center justify-center">
+    <div className="w-full flex items-center justify-center" style={{ maxHeight: 'clamp(12rem, 30vh, 16rem)' }}>
       {loading && !error && (
-        <div className="w-full h-48 bg-gradient-to-br from-gray-100 to-gray-200 animate-pulse flex items-center justify-center rounded-lg">
-          <ImageIcon className="w-16 h-16 text-gray-400" />
+        <div className="w-full bg-gradient-to-br from-gray-100 to-gray-200 animate-pulse flex items-center justify-center rounded-lg" style={{ height: 'clamp(10rem, 25vh, 12rem)' }}>
+          <ImageIcon style={{ width: 'clamp(2rem, 8vw, 4rem)', height: 'clamp(2rem, 8vw, 4rem)' }} className="text-gray-400" />
         </div>
       )}
       {error && (
-        <div className="w-full h-48 bg-red-50 border border-red-200 flex flex-col items-center justify-center rounded-lg">
-          <ImageIcon className="w-16 h-16 text-red-400 mb-2" />
-          <p className="text-red-600 text-sm">Failed to load image</p>
+        <div className="w-full bg-red-50 border border-red-200 flex flex-col items-center justify-center rounded-lg" style={{ height: 'clamp(10rem, 25vh, 12rem)' }}>
+          <ImageIcon style={{ width: 'clamp(2rem, 8vw, 4rem)', height: 'clamp(2rem, 8vw, 4rem)' }} className="text-red-400 mb-2" />
+          <p className="text-red-600" style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Failed to load image</p>
         </div>
       )}
       <img
         key={src}
         src={src}
         alt={alt}
-        className={`max-w-full max-h-64 object-contain rounded-lg animate-fade-in ${loading || error ? 'hidden' : ''}`}
+        className={`max-w-full object-contain rounded-lg animate-fade-in ${loading || error ? 'hidden' : ''}`}
+        style={{ maxHeight: 'clamp(12rem, 30vh, 16rem)' }}
         onLoad={() => setLoading(false)}
         onError={(e) => {
           console.error('Image load error:', src, e);
@@ -48,11 +49,11 @@ function SlideImage({ src, alt }) {
 
 function TitleSlide({ slide, image }) {
   return (
-    <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border-2 border-emerald-200 rounded-xl p-6 h-full flex flex-col justify-center">
-      <div className="text-center mb-4">
-        <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">{slide.title}</h2>
+    <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border-2 border-emerald-200 rounded-xl h-full flex flex-col justify-center" style={{ padding: 'clamp(1rem, 3vw, 1.5rem)' }}>
+      <div className="text-center" style={{ marginBottom: 'clamp(0.75rem, 2vh, 1rem)' }}>
+        <h2 className="font-bold text-gray-900" style={{ fontSize: 'clamp(1.25rem, 4vw, 1.875rem)', marginBottom: 'clamp(0.25rem, 1vh, 0.5rem)' }}>{slide.title}</h2>
         {slide.content && (
-          <p className="text-lg md:text-xl text-gray-600">{slide.content}</p>
+          <p className="text-gray-600" style={{ fontSize: 'clamp(1rem, 3vw, 1.25rem)' }}>{slide.content}</p>
         )}
       </div>
       {image && <SlideImage src={image} alt={slide.title} />}
@@ -62,8 +63,8 @@ function TitleSlide({ slide, image }) {
 
 function SectionSlide({ slide, image }) {
   return (
-    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-6 h-full flex flex-col justify-center">
-      <h2 className="text-2xl md:text-3xl font-bold text-center text-gray-900 mb-4">{slide.title}</h2>
+    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl h-full flex flex-col justify-center" style={{ padding: 'clamp(1rem, 3vw, 1.5rem)' }}>
+      <h2 className="font-bold text-center text-gray-900" style={{ fontSize: 'clamp(1.25rem, 4vw, 1.875rem)', marginBottom: 'clamp(0.75rem, 2vh, 1rem)' }}>{slide.title}</h2>
       {image && <SlideImage src={image} alt={slide.title} />}
     </div>
   );
@@ -73,15 +74,15 @@ function ContentSlide({ slide, image }) {
   const content = Array.isArray(slide.content) ? slide.content : [slide.content];
   
   return (
-    <div className="bg-white border-2 border-gray-200 rounded-xl p-6 h-full flex flex-col">
-      <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-4">{slide.title}</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 overflow-hidden">
+    <div className="bg-white border-2 border-gray-200 rounded-xl h-full flex flex-col" style={{ padding: 'clamp(0.75rem, 2.5vw, 1.5rem)' }}>
+      <h2 className="font-bold text-gray-900" style={{ fontSize: 'clamp(0.875rem, 3vw, 1.5rem)', marginBottom: 'clamp(0.5rem, 1.5vh, 1rem)' }}>{slide.title}</h2>
+      <div className="grid grid-cols-2 flex-1 overflow-hidden" style={{ gap: 'clamp(0.5rem, 1.5vw, 1rem)' }}>
         <div className="overflow-y-auto">
-          <ul className="space-y-2">
+          <ul style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(0.25rem, 0.8vh, 0.5rem)' }}>
             {content.map((item, idx) => (
-              <li key={idx} className="flex items-start gap-2">
-                <span className="flex-shrink-0 w-2 h-2 bg-emerald-500 rounded-full mt-2"></span>
-                <span className="text-gray-700 text-sm md:text-base">{item}</span>
+              <li key={idx} className="flex items-start" style={{ gap: 'clamp(0.25rem, 0.8vw, 0.5rem)' }}>
+                <span className="flex-shrink-0 bg-emerald-500 rounded-full" style={{ width: 'clamp(0.25rem, 0.8vw, 0.5rem)', height: 'clamp(0.25rem, 0.8vw, 0.5rem)', marginTop: 'clamp(0.3rem, 0.8vh, 0.5rem)' }}></span>
+                <span className="text-gray-700" style={{ fontSize: 'clamp(0.625rem, 2vw, 1rem)', lineHeight: '1.4' }}>{item}</span>
               </li>
             ))}
           </ul>
@@ -103,24 +104,24 @@ function ChartSlide({ slide, image }) {
   const maxValue = Math.max(...values, 1);
   
   return (
-    <div className="bg-white border-2 border-gray-200 rounded-xl p-6 h-full flex flex-col">
-      <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-4">{slide.title}</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 overflow-hidden">
+    <div className="bg-white border-2 border-gray-200 rounded-xl h-full flex flex-col" style={{ padding: 'clamp(0.75rem, 2.5vw, 1.5rem)' }}>
+      <h2 className="font-bold text-gray-900" style={{ fontSize: 'clamp(0.875rem, 3vw, 1.5rem)', marginBottom: 'clamp(0.5rem, 1.5vh, 1rem)' }}>{slide.title}</h2>
+      <div className="grid grid-cols-2 flex-1 overflow-hidden" style={{ gap: 'clamp(0.5rem, 1.5vw, 1rem)' }}>
         <div className="overflow-y-auto">
           {chartData.title && (
-            <h3 className="text-base md:text-lg font-semibold text-gray-800 mb-3">{chartData.title}</h3>
+            <h3 className="font-semibold text-gray-800" style={{ fontSize: 'clamp(0.75rem, 2.2vw, 1.125rem)', marginBottom: 'clamp(0.4rem, 1.2vh, 0.75rem)' }}>{chartData.title}</h3>
           )}
-          <div className="space-y-2">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(0.25rem, 0.8vh, 0.5rem)' }}>
             {categories.map((category, idx) => (
-              <div key={idx} className="space-y-1">
-                <div className="flex justify-between text-xs md:text-sm">
+              <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(0.125rem, 0.4vh, 0.25rem)' }}>
+                <div className="flex justify-between" style={{ fontSize: 'clamp(0.625rem, 1.8vw, 0.875rem)' }}>
                   <span className="text-gray-700">{category}</span>
                   <span className="text-gray-900 font-semibold">{values[idx]}</span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-3">
+                <div className="w-full bg-gray-200 rounded-full" style={{ height: 'clamp(0.4rem, 1.2vh, 0.75rem)' }}>
                   <div
-                    className="bg-emerald-500 h-3 rounded-full transition-all duration-500"
-                    style={{ width: `${(values[idx] / maxValue) * 100}%` }}
+                    className="bg-emerald-500 rounded-full transition-all duration-500"
+                    style={{ width: `${(values[idx] / maxValue) * 100}%`, height: '100%' }}
                   ></div>
                 </div>
               </div>
@@ -139,11 +140,11 @@ function ChartSlide({ slide, image }) {
 
 function ClosingSlide({ slide, image }) {
   return (
-    <div className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-xl p-6 h-full flex flex-col justify-center">
-      <div className="text-center mb-4">
-        <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">{slide.title}</h2>
+    <div className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-xl h-full flex flex-col justify-center" style={{ padding: 'clamp(1rem, 3vw, 1.5rem)' }}>
+      <div className="text-center" style={{ marginBottom: 'clamp(0.75rem, 2vh, 1rem)' }}>
+        <h2 className="font-bold text-gray-900" style={{ fontSize: 'clamp(1.25rem, 4vw, 1.875rem)', marginBottom: 'clamp(0.25rem, 1vh, 0.5rem)' }}>{slide.title}</h2>
         {slide.content && (
-          <p className="text-lg md:text-xl text-gray-600">{slide.content}</p>
+          <p className="text-gray-600" style={{ fontSize: 'clamp(1rem, 3vw, 1.25rem)' }}>{slide.content}</p>
         )}
       </div>
       {image && <SlideImage src={image} alt={slide.title} />}
@@ -245,7 +246,7 @@ function PresentationViewer({ presentation, images, isProcessing = false }) {
         <div className="relative pb-8">
           {/* Current Slide */}
           <div className="bg-gray-900 rounded-xl overflow-hidden shadow-2xl" style={{ aspectRatio: '16/9' }}>
-            <div className="w-full h-full flex items-center justify-center p-8">
+            <div className="w-full h-full flex items-center justify-center" style={{ padding: 'clamp(1rem, 4vw, 2rem)' }}>
               {(() => {
                 const slide = slides[currentSlide];
                 const imageKey = `slide_${currentSlide}`;
@@ -266,29 +267,31 @@ function PresentationViewer({ presentation, images, isProcessing = false }) {
           </div>
 
           {/* Navigation Controls */}
-          <div className="flex items-center justify-between mt-4">
+          <div className="flex items-center justify-between" style={{ marginTop: 'clamp(0.75rem, 2vh, 1rem)' }}>
             <button
               onClick={prevSlide}
               disabled={currentSlide === 0}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ gap: 'clamp(0.25rem, 1vw, 0.5rem)', padding: 'clamp(0.5rem, 2vw, 1rem) clamp(0.75rem, 3vw, 1rem)', fontSize: 'clamp(0.875rem, 2.5vw, 1rem)' }}
             >
-              <ChevronLeft className="w-5 h-5" />
-              Previous
+              <ChevronLeft style={{ width: 'clamp(1rem, 3vw, 1.25rem)', height: 'clamp(1rem, 3vw, 1.25rem)' }} />
+              <span className="hidden sm:inline">Previous</span>
             </button>
 
-            <div className="flex items-center gap-2">
-              <span className="text-lg font-semibold text-gray-900">
+            <div className="flex items-center" style={{ gap: 'clamp(0.25rem, 1vw, 0.5rem)' }}>
+              <span className="font-semibold text-gray-900" style={{ fontSize: 'clamp(0.875rem, 2.5vw, 1.125rem)' }}>
                 {currentSlide + 1} / {slides.length}
               </span>
               {/* Slide thumbnails */}
-              <div className="flex gap-1 ml-4">
+              <div className="flex" style={{ gap: 'clamp(0.125rem, 0.5vw, 0.25rem)', marginLeft: 'clamp(0.5rem, 2vw, 1rem)' }}>
                 {slides.map((_, idx) => (
                   <button
                     key={idx}
                     onClick={() => setCurrentSlide(idx)}
-                    className={`w-2 h-2 rounded-full transition-colors ${
+                    className={`rounded-full transition-colors ${
                       idx === currentSlide ? 'bg-emerald-500' : 'bg-gray-300 hover:bg-gray-400'
                     }`}
+                    style={{ width: 'clamp(0.375rem, 1.5vw, 0.5rem)', height: 'clamp(0.375rem, 1.5vw, 0.5rem)' }}
                     title={`Go to slide ${idx + 1}`}
                   />
                 ))}
@@ -298,15 +301,16 @@ function PresentationViewer({ presentation, images, isProcessing = false }) {
             <button
               onClick={nextSlide}
               disabled={currentSlide === slides.length - 1}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ gap: 'clamp(0.25rem, 1vw, 0.5rem)', padding: 'clamp(0.5rem, 2vw, 1rem) clamp(0.75rem, 3vw, 1rem)', fontSize: 'clamp(0.875rem, 2.5vw, 1rem)' }}
             >
-              Next
-              <ChevronRight className="w-5 h-5" />
+              <span className="hidden sm:inline">Next</span>
+              <ChevronRight style={{ width: 'clamp(1rem, 3vw, 1.25rem)', height: 'clamp(1rem, 3vw, 1.25rem)' }} />
             </button>
           </div>
 
           {/* Keyboard hint */}
-          <p className="text-center text-sm text-gray-500 mt-2">
+          <p className="text-center text-gray-500" style={{ marginTop: 'clamp(0.25rem, 1vh, 0.5rem)', fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>
             Use arrow keys to navigate slides
           </p>
         </div>
