@@ -27,19 +27,20 @@ function WorksheetViewer({ worksheet, images, isProcessing = false }) {
   return (
     <div>
       {/* Header */}
-      <div className={`bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6 ${isProcessing ? 'opacity-50' : ''}`}>
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-3">
-            <FileText className="w-8 h-8 text-emerald-500" />
-            <h1 className="text-3xl font-bold text-gray-900">{worksheet.title}</h1>
+      <div className={`bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 mb-6 ${isProcessing ? 'opacity-50' : ''}`}>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <FileText className="w-6 h-6 sm:w-8 sm:h-8 text-emerald-500 flex-shrink-0" />
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 break-words">{worksheet.title}</h1>
           </div>
           <button
             onClick={handleDownload}
             disabled={isProcessing}
-            className="flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm whitespace-nowrap flex-shrink-0"
           >
-            <Download className="w-5 h-5" />
-            Download PDF
+            <Download className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="hidden sm:inline">Download PDF</span>
+            <span className="sm:hidden">Download</span>
           </button>
         </div>
         
@@ -89,8 +90,8 @@ function WorksheetViewer({ worksheet, images, isProcessing = false }) {
           const sectionType = section.type || 'short_answer';
 
           return (
-            <div key={sectionIdx} className="bg-white border-b border-gray-200 p-6 last:border-b-0">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">{section.title}</h2>
+            <div key={sectionIdx} className="bg-white border-b border-gray-200 p-4 sm:p-6 last:border-b-0">
+              <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 mb-2">{section.title}</h2>
               
               {section.instructions && (
                 <p className="text-gray-600 italic mb-4">{section.instructions}</p>
