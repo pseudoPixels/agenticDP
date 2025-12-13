@@ -6,7 +6,7 @@ import { useSubscription } from '../contexts/SubscriptionContext';
 
 // Animated rotating text component
 function RotatingText() {
-  const words = ['lesson plan', 'worksheet', 'slides', 'anything'];
+  const words = ['a lesson plan', 'a worksheet', 'a presentation deck', 'anything'];
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
 
@@ -347,14 +347,18 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
   return (
     <div className="min-h-[80vh] flex flex-col items-center justify-center px-4">
       {/* Main Heading */}
-      <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 text-left mb-12 max-w-4xl w-full leading-tight">
+      <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 text-center mb-12 max-w-4xl w-full leading-tight">
         {user ? (
           <>
-            Hi {user.name?.split(' ')[0]}, let's create <RotatingText />
+            Hi {user.name?.split(' ')[0]}, create <RotatingText />
+            <br />
+            for your homeschool today
           </>
         ) : (
           <>
-            Let's create <RotatingText />
+            Create <RotatingText />
+            <br />
+            for your homeschool today
           </>
         )}
       </h1>
