@@ -112,6 +112,7 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
   const [showIdeasPopup, setShowIdeasPopup] = useState(false);
   const [randomPrompts, setRandomPrompts] = useState([]);
   const [placeholderText, setPlaceholderText] = useState('');
+  const [isTextareaFocused, setIsTextareaFocused] = useState(false);
   
   const contentTypes = [
     'Lesson Plan',
@@ -347,7 +348,7 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
   return (
     <div className="min-h-[80vh] flex flex-col items-center justify-center px-4">
       {/* Main Heading */}
-      <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 text-center mb-12 max-w-4xl w-full leading-tight">
+      <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 text-center mb-12 max-w-4xl w-full leading-tight">
         {user ? (
           <>
             Hi {user.name?.split(' ')[0]}, create <RotatingText />
@@ -364,7 +365,11 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
       </h1>
 
       {/* Main Card */}
-      <div className="w-full max-w-4xl bg-white rounded-2xl shadow-sm border border-gray-200 p-8 sm:p-12">
+      <div className={`w-full max-w-4xl bg-white rounded-2xl border p-8 sm:p-12 transition-all duration-300 ${
+        isTextareaFocused 
+          ? 'shadow-[0_0_30px_rgba(16,185,129,0.15),0_0_60px_rgba(59,130,246,0.1),0_0_90px_rgba(168,85,247,0.05)] border-emerald-200' 
+          : 'shadow-sm border-gray-200'
+      }`}>
         <form onSubmit={handleGenerate} className="space-y-6">
           {/* Content Type Dropdown */}
           <div className="relative">
@@ -407,6 +412,8 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
             <textarea
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
+              onFocus={() => setIsTextareaFocused(true)}
+              onBlur={() => setIsTextareaFocused(false)}
               placeholder={placeholderText}
               className="w-full h-32 px-4 py-4 text-base text-gray-900 placeholder-gray-400 bg-white border-0 rounded-lg resize-none focus:outline-none focus:ring-0"
               disabled={isGenerating}
