@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Plus, Library, LogOut, Menu, X, User, HelpCircle, ChevronDown, Clock, Crown } from 'lucide-react';
+import { Plus, Library, LogOut, Menu, X, User, HelpCircle, ChevronDown, Clock, Crown, Sparkles } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
 
@@ -62,7 +62,7 @@ function Header() {
                   : 'text-gray-700 hover:bg-gray-50'
               }`}
             >
-              <Plus className="w-4 h-4" />
+              <Sparkles className="w-4 h-4" />
               Create
             </button>
 
