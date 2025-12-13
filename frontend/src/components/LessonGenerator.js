@@ -4,6 +4,35 @@ import { generateLessonStream, generatePresentationStream, generateWorksheetStre
 import { useAuth } from '../contexts/AuthContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
 
+// Animated rotating text component
+function RotatingText() {
+  const words = ['lesson plan', 'worksheet', 'slides', 'anything'];
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIsAnimating(true);
+      setTimeout(() => {
+        setCurrentIndex((prev) => (prev + 1) % words.length);
+        setIsAnimating(false);
+      }, 300);
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <span
+      className={`inline-block transition-all duration-300 ${
+        isAnimating ? 'opacity-0 transform -translate-y-2' : 'opacity-100 transform translate-y-0'
+      }`}
+    >
+      {words[currentIndex]}
+    </span>
+  );
+}
+
 const AGENT_STEPS_BY_TYPE = {
   'Lesson Plan': [
     { id: 'analyzing', label: 'Analyzing your request', duration: 1200 },
@@ -318,8 +347,16 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
   return (
     <div className="min-h-[80vh] flex flex-col items-center justify-center px-4">
       {/* Main Heading */}
-      <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 text-center mb-12 max-w-4xl">
-        Let's create something for your homeschool today
+      <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 text-left mb-12 max-w-4xl w-full leading-tight">
+        {user ? (
+          <>
+            Hi {user.name?.split(' ')[0]}, let's create <RotatingText />
+          </>
+        ) : (
+          <>
+            Let's create <RotatingText />
+          </>
+        )}
       </h1>
 
       {/* Main Card */}
