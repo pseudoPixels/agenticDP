@@ -3,6 +3,7 @@ import { Sparkles, Loader2, CheckCircle2, Circle, ChevronDown, Check, Lightbulb 
 import { generateLessonStream, generatePresentationStream, generateWorksheetStream } from '../api';
 import { useAuth } from '../contexts/AuthContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
+import posthog from '../posthog';
 
 // Animated rotating text component
 function RotatingText() {
@@ -183,6 +184,13 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
       return;
     }
 
+    // Track content creation attempt
+    posthog.capture('create_button_clicked', { 
+      content_type: selectedType,
+      topic_length: topic.length,
+      has_user: !!user
+    });
+
     setIsGenerating(true);
     const contentTypeName = selectedType === 'Lesson Plan' ? 'lesson' : selectedType.toLowerCase();
     setStatus(`Generating ${contentTypeName}...`);
@@ -221,6 +229,11 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
           } else if (data.type === 'complete') {
             setStatus('Presentation generated successfully!');
             setIsGenerating(false);
+            // Track successful presentation generation
+            posthog.capture('content_generated_success', { 
+              content_type: 'presentation',
+              topic_length: topic.length
+            });
             setTimeout(() => {
               setStatus('');
               setAgentStep('');
@@ -234,11 +247,21 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
               setAgentStep('');
               setCompletedSteps([]);
               setShowPaywall(true);
+              // Track subscription required error
+              posthog.capture('content_generation_error', { 
+                content_type: 'presentation',
+                error_type: 'subscription_required'
+              });
             } else {
               setStatus('Error generating presentation. Please try again.');
               setIsGenerating(false);
               setAgentStep('');
               setCompletedSteps([]);
+              // Track general error
+              posthog.capture('content_generation_error', { 
+                content_type: 'presentation',
+                error_type: 'general_error'
+              });
             }
           }
         });
@@ -267,6 +290,11 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
           } else if (data.type === 'complete') {
             setStatus('Worksheet generated successfully!');
             setIsGenerating(false);
+            // Track successful worksheet generation
+            posthog.capture('content_generated_success', { 
+              content_type: 'worksheet',
+              topic_length: topic.length
+            });
             setTimeout(() => {
               setStatus('');
               setAgentStep('');
@@ -280,11 +308,21 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
               setAgentStep('');
               setCompletedSteps([]);
               setShowPaywall(true);
+              // Track subscription required error
+              posthog.capture('content_generation_error', { 
+                content_type: 'worksheet',
+                error_type: 'subscription_required'
+              });
             } else {
               setStatus('Error generating worksheet. Please try again.');
               setIsGenerating(false);
               setAgentStep('');
               setCompletedSteps([]);
+              // Track general error
+              posthog.capture('content_generation_error', { 
+                content_type: 'worksheet',
+                error_type: 'general_error'
+              });
             }
           }
         });
@@ -313,6 +351,11 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
           } else if (data.type === 'complete') {
             setStatus('Lesson generated successfully!');
             setIsGenerating(false);
+            // Track successful lesson generation
+            posthog.capture('content_generated_success', { 
+              content_type: 'lesson',
+              topic_length: topic.length
+            });
             setTimeout(() => {
               setStatus('');
               setAgentStep('');
@@ -326,11 +369,21 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
               setAgentStep('');
               setCompletedSteps([]);
               setShowPaywall(true);
+              // Track subscription required error
+              posthog.capture('content_generation_error', { 
+                content_type: 'lesson',
+                error_type: 'subscription_required'
+              });
             } else {
               setStatus('Error generating lesson. Please try again.');
               setIsGenerating(false);
               setAgentStep('');
               setCompletedSteps([]);
+              // Track general error
+              posthog.capture('content_generation_error', { 
+                content_type: 'lesson',
+                error_type: 'general_error'
+              });
             }
           }
         });
@@ -341,6 +394,12 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
       setIsGenerating(false);
       setAgentStep('');
       setCompletedSteps([]);
+      // Track general exception error
+      posthog.capture('content_generation_error', { 
+        content_type: selectedType.toLowerCase(),
+        error_type: 'exception',
+        error_message: error.message
+      });
       setTimeout(() => setStatus(''), 3000);
     }
   };
@@ -394,6 +453,8 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
                     onClick={() => {
                       setSelectedType(type);
                       setShowTypeDropdown(false);
+                      // Track content type selection
+                      posthog.capture('content_type_selected', { content_type: type });
                     }}
                     className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 transition-colors flex items-center justify-between"
                   >
@@ -412,7 +473,10 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
             <textarea
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
-              onFocus={() => setIsTextareaFocused(true)}
+              onFocus={() => {
+                setIsTextareaFocused(true);
+                posthog.capture('textarea_focused');
+              }}
               onBlur={() => setIsTextareaFocused(false)}
               placeholder={placeholderText}
               className="w-full h-32 px-4 py-4 text-base text-gray-900 placeholder-gray-400 bg-white border-0 rounded-lg resize-none focus:outline-none focus:ring-0"
@@ -462,7 +526,10 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
       {!isGenerating && (
         <div className="fixed bottom-8 right-8 z-50">
           <button
-            onClick={() => setShowIdeasPopup(!showIdeasPopup)}
+            onClick={() => {
+              setShowIdeasPopup(!showIdeasPopup);
+              posthog.capture('need_ideas_clicked');
+            }}
             className="flex items-center gap-2 px-5 py-3 bg-white text-gray-700 font-medium rounded-full shadow-lg border border-gray-200 hover:shadow-xl transition-all"
           >
             <Lightbulb className="w-5 h-5 text-emerald-500" />
@@ -488,6 +555,7 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
                       onClick={() => {
                         setTopic(prompt);
                         setShowIdeasPopup(false);
+                        posthog.capture('idea_selected', { prompt });
                       }}
                       className="w-full text-left px-4 py-3 text-sm text-gray-700 bg-gray-50 hover:bg-emerald-50 rounded-lg transition-colors border border-gray-200"
                     >
