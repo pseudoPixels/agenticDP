@@ -50,24 +50,32 @@ function PaywallModal({ isOpen, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 backdrop-blur-sm animate-fadeIn">
-      <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden animate-slideUp">
-        {/* Close button */}
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black bg-opacity-50 backdrop-blur-sm animate-fadeIn overflow-y-auto">
+      <div className="relative w-full max-w-xs sm:max-w-md md:max-w-lg lg:max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden animate-slideUp my-2 sm:my-4 max-h-[95vh] sm:max-h-[90vh] flex flex-col mx-auto">
+        {/* Close button - Desktop */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors z-10"
+          className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors z-10 hidden sm:flex"
+        >
+          <X className="w-5 h-5" />
+        </button>
+        
+        {/* Close button - Mobile (sticky) */}
+        <button
+          onClick={onClose}
+          className="fixed top-2 right-2 p-2 bg-gray-800 text-white rounded-full transition-colors z-20 sm:hidden shadow-lg"
         >
           <X className="w-5 h-5" />
         </button>
 
         {/* Header */}
-        <div className="bg-gradient-to-br from-emerald-500 to-teal-600 px-6 sm:px-8 py-8 sm:py-12 text-white">
-          <div className="flex items-center justify-center mb-4">
-            <div className="p-3 bg-white bg-opacity-20 rounded-full">
-              <Crown className="w-8 h-8" />
+        <div className="bg-gradient-to-br from-emerald-500 to-teal-600 px-4 sm:px-6 md:px-8 py-6 sm:py-8 md:py-10 text-white">
+          <div className="flex items-center justify-center mb-3 sm:mb-4">
+            <div className="p-2 sm:p-3 bg-white bg-opacity-20 rounded-full">
+              <Crown className="w-6 h-6 sm:w-8 sm:h-8" />
             </div>
           </div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-center mb-2">
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-center mb-1 sm:mb-2">
             {isTrialActive ? 'Upgrade to Pro' : 'Your Trial Has Ended'}
           </h2>
           <p className="text-center text-emerald-50 text-sm sm:text-base">
@@ -78,11 +86,11 @@ function PaywallModal({ isOpen, onClose }) {
           </p>
         </div>
 
-        {/* Content */}
-        <div className="px-6 sm:px-8 py-6 sm:py-8">
+        {/* Content - Scrollable when needed */}
+        <div className="px-4 sm:px-6 md:px-8 py-4 sm:py-6 md:py-8 overflow-y-auto flex-1" style={{ maxHeight: 'calc(100vh - 200px)' }}>
           {/* Pricing Card */}
-          <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-6 sm:p-8 mb-6 border-2 border-emerald-200">
-            <div className="flex items-center justify-between mb-6">
+          <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-4 sm:p-6 md:p-8 mb-6 border-2 border-emerald-200">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-0 mb-6">
               <div>
                 <h3 className="text-xl sm:text-2xl font-bold text-gray-900">Pro Plan</h3>
                 <p className="text-sm text-gray-600 mt-1">Unlimited access to all features</p>
@@ -153,7 +161,7 @@ function PaywallModal({ isOpen, onClose }) {
                   <Gift className="w-5 h-5 text-emerald-600 flex-shrink-0" />
                   <h4 className="font-semibold text-gray-900">Promo Code</h4>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <input
                     type="text"
                     value={promoCode}
@@ -205,9 +213,16 @@ function PaywallModal({ isOpen, onClose }) {
         }
         .animate-fadeIn {
           animation: fadeIn 0.2s ease-out;
+          will-change: opacity;
         }
         .animate-slideUp {
           animation: slideUp 0.3s ease-out;
+          will-change: opacity, transform;
+        }
+        @media (max-height: 640px) {
+          .animate-slideUp {
+            animation: fadeIn 0.2s ease-out;
+          }
         }
       `}</style>
     </div>
