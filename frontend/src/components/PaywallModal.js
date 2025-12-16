@@ -3,7 +3,7 @@ import { X, Check, Sparkles, Crown, Gift } from 'lucide-react';
 import { useSubscription } from '../contexts/SubscriptionContext';
 
 function PaywallModal({ isOpen, onClose }) {
-  const { createCheckoutSession, applyPromoCode, subscriptionStatus, isTrialActive } = useSubscription();
+  const { createCheckoutSession, applyPromoCode, isTrialActive } = useSubscription();
   const [showPromoInput, setShowPromoInput] = useState(false);
   const [promoCode, setPromoCode] = useState('');
   const [promoLoading, setPromoLoading] = useState(false);

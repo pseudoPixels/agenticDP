@@ -4,6 +4,7 @@ import { generateLessonStream, generatePresentationStream, generateWorksheetStre
 import { useAuth } from '../contexts/AuthContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
 import posthog from '../posthog';
+import PaywallModal from './PaywallModal';
 
 // Animated rotating text component
 function RotatingText() {
@@ -103,7 +104,7 @@ function AgentProgress({ currentStep, completedSteps, contentType }) {
 
 function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
   const { user } = useAuth();
-  const { setShowPaywall } = useSubscription();
+  const { showPaywall, setShowPaywall, isTrialActive, isSubscribed, isLifetime, hasExpired, canCreateContent } = useSubscription();
   const [topic, setTopic] = useState('');
   const [status, setStatus] = useState('');
   const [agentStep, setAgentStep] = useState('');
@@ -190,6 +191,31 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
       topic_length: topic.length,
       has_user: !!user
     });
+
+    // Check if user has an active subscription or trial
+    // A user has access if they have an active trial, subscription, lifetime access, or explicit canCreateContent permission
+    const hasAccess = isTrialActive || isSubscribed || isLifetime || canCreateContent;
+    
+    // Debug subscription status (can be removed in production)
+    console.log('LessonGenerator - Subscription status:', { 
+      isTrialActive, 
+      isSubscribed, 
+      isLifetime, 
+      hasExpired, 
+      canCreateContent, 
+      hasAccess
+    });
+    
+    if (!hasAccess) {
+      // Show paywall if user doesn't have access
+      posthog.capture('paywall_shown', { 
+        trigger: 'create_button',
+        content_type: selectedType
+      });
+      // Set showPaywall to true to display the paywall modal
+      setShowPaywall(true);
+      return;
+    }
 
     setIsGenerating(true);
     const contentTypeName = selectedType === 'Lesson Plan' ? 'lesson' : selectedType.toLowerCase();
@@ -568,6 +594,9 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
           )}
         </div>
       )}
+      
+      {/* Render PaywallModal directly in LessonGenerator */}
+      <PaywallModal isOpen={showPaywall} onClose={() => setShowPaywall(false)} />
     </div>
   );
 }
