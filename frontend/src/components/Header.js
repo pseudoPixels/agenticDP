@@ -35,7 +35,18 @@ function Header() {
     }
   };
 
-  const isActive = (path) => location.pathname === path;
+  // Check if the current path starts with a given path
+  const isActive = (path) => {
+    if (path === '/') {
+      return location.pathname === '/';
+    }
+    return location.pathname.startsWith(path);
+  };
+
+  // Force navigation to home page, ensuring state is reset
+  const goToHome = () => {
+    navigate('/', { replace: true });
+  };
 
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
@@ -43,7 +54,7 @@ function Header() {
         <div className="flex items-center justify-between">
           {/* Left: Logo */}
           <button
-            onClick={() => navigate('/')}
+            onClick={goToHome}
             className="flex items-center gap-2 hover:opacity-80 transition-opacity"
           >
             <div className="w-8 h-8 flex items-center justify-center">
@@ -55,7 +66,7 @@ function Header() {
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-2">
             <button
-              onClick={() => navigate('/')}
+              onClick={goToHome}
               className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-colors ${
                 isActive('/')
                   ? 'text-emerald-600 bg-emerald-50'
@@ -106,7 +117,7 @@ function Header() {
 
             {isAuthenticated && (
               <button
-                onClick={() => navigate('/library')}
+                onClick={() => navigate('/library', { replace: true })}
                 className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-colors ${
                   isActive('/library')
                     ? 'text-emerald-600 bg-emerald-50'
@@ -266,7 +277,7 @@ function Header() {
           <div className="md:hidden mt-4 pb-4 border-t border-gray-200 pt-4 space-y-2">
             <button
               onClick={() => {
-                navigate('/');
+                goToHome();
                 setShowMobileMenu(false);
               }}
               className={`w-full flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-colors ${
@@ -281,7 +292,7 @@ function Header() {
               <>
                 <button
                   onClick={() => {
-                    navigate('/library');
+                    navigate('/library', { replace: true });
                     setShowMobileMenu(false);
                   }}
                   className={`w-full flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-colors ${
