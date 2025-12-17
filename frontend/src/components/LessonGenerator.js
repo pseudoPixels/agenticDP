@@ -561,11 +561,11 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
           
           {/* Clickable Suggestions */}
           <div className="mb-4">
-            <p className="text-sm text-gray-500 mb-2 flex items-center gap-1.5">
+            <p className="text-sm text-gray-500 mb-2 flex items-center justify-center gap-1.5">
               <Lightbulb className="w-4 h-4 text-emerald-500" />
               <span>Try one of these suggestions:</span>
             </p>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 justify-center">
               {randomPrompts.slice(0, 4).map((prompt, index) => (
                 <button
                   key={index}

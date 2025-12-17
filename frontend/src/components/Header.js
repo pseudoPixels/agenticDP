@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Plus, Library, LogOut, Menu, X, User, HelpCircle, ChevronDown, Clock, Crown, Sparkles } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -13,6 +13,35 @@ function Header() {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showLearnMoreMenu, setShowLearnMoreMenu] = useState(false);
+  
+  // Refs for dropdown menus
+  const userMenuRef = useRef(null);
+  const learnMoreMenuRef = useRef(null);
+  
+  // Handle clicks outside of the menus
+  useEffect(() => {
+    function handleClickOutside(event) {
+      // Close user menu if clicked outside
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setShowUserMenu(false);
+      }
+      
+      // Close learn more menu if clicked outside
+      if (learnMoreMenuRef.current && !learnMoreMenuRef.current.contains(event.target)) {
+        setShowLearnMoreMenu(false);
+      }
+    }
+    
+    // Add event listener when menus are open
+    if (showUserMenu || showLearnMoreMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    
+    // Cleanup
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showUserMenu, showLearnMoreMenu]);
 
   const handleAuthClick = async () => {
     if (isAuthenticated) {
@@ -75,10 +104,9 @@ function Header() {
 
             {/* Learn More Dropdown - Only shown when not authenticated */}
             {!isAuthenticated && (
-              <div className="relative">
+              <div className="relative" ref={learnMoreMenuRef}>
                 <button
                   onClick={() => setShowLearnMoreMenu(!showLearnMoreMenu)}
-                  onBlur={() => setTimeout(() => setShowLearnMoreMenu(false), 200)}
                   className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-colors text-gray-700 hover:bg-gray-50"
                 >
                   <HelpCircle className="w-4 h-4" />
@@ -130,10 +158,9 @@ function Header() {
           <div className="flex items-center gap-2">
             {/* User Menu - Desktop */}
             {isAuthenticated ? (
-              <div className="hidden sm:block relative">
+              <div className="hidden sm:block relative" ref={userMenuRef}>
                 <button
                   onClick={handleAuthClick}
-                  onBlur={() => setTimeout(() => setShowUserMenu(false), 200)}
                   className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-gradient-to-r from-emerald-400 to-teal-500 text-white text-xs sm:text-sm font-medium rounded-lg hover:from-emerald-500 hover:to-teal-600 transition-all"
                 >
                   {user?.picture ? (
