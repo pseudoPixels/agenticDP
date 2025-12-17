@@ -145,19 +145,11 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
     "Generate a beginners’ lesson on basic daily duas with examples."
   ];
 
-  // Set random placeholder on component mount
+  // Generate random prompts when component mounts
   useEffect(() => {
-    const randomIndex = Math.floor(Math.random() * homeschool_prompts.length);
-    setPlaceholderText(homeschool_prompts[randomIndex]);
+    const shuffled = [...homeschool_prompts].sort(() => Math.random() - 0.5);
+    setRandomPrompts(shuffled.slice(0, 5));
   }, []);
-
-  // Generate 5 random prompts when popup opens
-  useEffect(() => {
-    if (showIdeasPopup) {
-      const shuffled = [...homeschool_prompts].sort(() => Math.random() - 0.5);
-      setRandomPrompts(shuffled.slice(0, 5));
-    }
-  }, [showIdeasPopup]);
 
   // Simulate agent steps before actual generation
   useEffect(() => {
@@ -504,10 +496,33 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
                 posthog.capture('textarea_focused');
               }}
               onBlur={() => setIsTextareaFocused(false)}
-              placeholder={placeholderText}
+              placeholder="Write what you want to create..."
               className="w-full h-32 px-4 py-4 text-base text-gray-900 placeholder-gray-400 bg-white border-0 rounded-lg resize-none focus:outline-none focus:ring-0"
               disabled={isGenerating}
             />
+          </div>
+          
+          {/* Clickable Suggestions */}
+          <div className="mb-4">
+            <p className="text-sm text-gray-500 mb-2 flex items-center gap-1.5">
+              <Lightbulb className="w-4 h-4 text-emerald-500" />
+              <span>Try one of these suggestions:</span>
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {randomPrompts.slice(0, 2).map((prompt, index) => (
+                <button
+                  key={index}
+                  type="button"
+                  onClick={() => {
+                    setTopic(prompt);
+                    posthog.capture('suggestion_selected', { prompt });
+                  }}
+                  className="px-3 py-1.5 text-xs text-gray-700 bg-gray-100 hover:bg-emerald-50 rounded-full transition-colors border border-gray-200"
+                >
+                  {prompt.length > 40 ? prompt.substring(0, 40) + '...' : prompt}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Create Button */}
@@ -548,52 +563,6 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
         )}
       </div>
 
-      {/* Floating "Need ideas?" Button - Bottom Right */}
-      {!isGenerating && (
-        <div className="fixed bottom-8 right-8 z-50">
-          <button
-            onClick={() => {
-              setShowIdeasPopup(!showIdeasPopup);
-              posthog.capture('need_ideas_clicked');
-            }}
-            className="flex items-center gap-2 px-5 py-3 bg-white text-gray-700 font-medium rounded-full shadow-lg border border-gray-200 hover:shadow-xl transition-all"
-          >
-            <Lightbulb className="w-5 h-5 text-emerald-500" />
-            <span>Need ideas?</span>
-          </button>
-
-          {/* Ideas Popup */}
-          {showIdeasPopup && (
-            <>
-              {/* Backdrop */}
-              <div 
-                className="fixed inset-0 bg-black bg-opacity-20 -z-10"
-                onClick={() => setShowIdeasPopup(false)}
-              />
-              
-              {/* Popup Card */}
-              <div className="absolute bottom-full right-0 mb-4 w-[90vw] sm:w-[500px] bg-white rounded-2xl shadow-2xl border border-gray-200 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Try one of these:</h3>
-                <div className="space-y-3">
-                  {randomPrompts.map((prompt, index) => (
-                    <button
-                      key={index}
-                      onClick={() => {
-                        setTopic(prompt);
-                        setShowIdeasPopup(false);
-                        posthog.capture('idea_selected', { prompt });
-                      }}
-                      className="w-full text-left px-4 py-3 text-sm text-gray-700 bg-gray-50 hover:bg-emerald-50 rounded-lg transition-colors border border-gray-200"
-                    >
-                      {prompt}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </>
-          )}
-        </div>
-      )}
       
       {/* Render PaywallModal directly in LessonGenerator */}
       <PaywallModal isOpen={showPaywall} onClose={() => setShowPaywall(false)} />
