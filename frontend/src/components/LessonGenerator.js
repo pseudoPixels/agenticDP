@@ -184,29 +184,38 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
       has_user: !!user
     });
 
-    // Check if user has an active subscription or trial
-    // A user has access if they have an active trial, subscription, lifetime access, or explicit canCreateContent permission
-    const hasAccess = isTrialActive || isSubscribed || isLifetime || canCreateContent;
-    
-    // Debug subscription status (can be removed in production)
-    console.log('LessonGenerator - Subscription status:', { 
-      isTrialActive, 
-      isSubscribed, 
-      isLifetime, 
-      hasExpired, 
-      canCreateContent, 
-      hasAccess
-    });
-    
-    if (!hasAccess) {
-      // Show paywall if user doesn't have access
-      posthog.capture('paywall_shown', { 
-        trigger: 'create_button',
+    // Only check subscription for logged-in users
+    if (user) {
+      // A user has access if they have an active trial, subscription, lifetime access, or explicit canCreateContent permission
+      const hasAccess = isTrialActive || isSubscribed || isLifetime || canCreateContent;
+      
+      // Debug subscription status (can be removed in production)
+      console.log('LessonGenerator - Subscription status:', { 
+        isTrialActive, 
+        isSubscribed, 
+        isLifetime, 
+        hasExpired, 
+        canCreateContent, 
+        hasAccess,
+        isLoggedIn: !!user
+      });
+      
+      if (!hasAccess) {
+        // Show paywall if logged-in user doesn't have access
+        posthog.capture('paywall_shown', { 
+          trigger: 'create_button',
+          content_type: selectedType
+        });
+        // Set showPaywall to true to display the paywall modal
+        setShowPaywall(true);
+        return;
+      }
+    } else {
+      // Log that a non-logged-in user is creating content
+      console.log('Non-logged-in user creating content');
+      posthog.capture('guest_content_creation', { 
         content_type: selectedType
       });
-      // Set showPaywall to true to display the paywall modal
-      setShowPaywall(true);
-      return;
     }
 
     setIsGenerating(true);
