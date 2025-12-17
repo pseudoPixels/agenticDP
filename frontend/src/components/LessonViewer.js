@@ -1,6 +1,36 @@
 import React from 'react';
 import { BookOpen, Lightbulb, Target, CheckCircle, ExternalLink, Image as ImageIcon } from 'lucide-react';
 
+// Helper function to detect and format URLs
+function detectUrl(text) {
+  // List of common top-level domains to validate against
+  const validTLDs = ['com', 'org', 'net', 'edu', 'gov', 'io', 'co', 'info', 'us', 'uk', 'ca', 'au', 'de', 'jp', 'fr'];
+  
+  // Check for full URLs with protocol (most reliable)
+  const fullUrlRegex = /\b(https?:\/\/[\w\-]+(\.[\w\-]+)+(\.[a-z]{2,})([\w\-\._~:/?#[\]@!$&'()*+,;=.]+)?)\b/i;
+  const fullUrlMatch = text.match(fullUrlRegex);
+  if (fullUrlMatch) return fullUrlMatch[0];
+  
+  // Check for domain-like strings (e.g., example.com)
+  // More strict regex that requires a valid TLD
+  const domainRegex = /\b([\w\-]+(\.[\w\-]+)*\.(com|org|net|edu|gov|io|co|info|us|uk|ca|au|de|jp|fr))\b/i;
+  const domainMatch = text.match(domainRegex);
+  if (domainMatch) return `https://${domainMatch[0]}`;
+  
+  // If it looks like a URL with a common TLD
+  if (!text.includes(' ')) {
+    const parts = text.split('.');
+    const potentialTLD = parts[parts.length - 1].toLowerCase();
+    
+    // Only treat as URL if it has a valid TLD
+    if (parts.length >= 2 && validTLDs.includes(potentialTLD)) {
+      return text.startsWith('http') ? text : `https://${text}`;
+    }
+  }
+  
+  return null;
+}
+
 function ImagePlaceholder() {
   return (
     <div className="float-right ml-6 mb-4 w-80 h-64 bg-gradient-to-br from-gray-100 to-gray-200 animate-pulse flex items-center justify-center">
@@ -230,12 +260,66 @@ function LessonViewer({ lesson, images, isProcessing = false }) {
               Additional Resources
             </h2>
             <ul className="space-y-2">
-              {lesson.additional_resources.map((resource, index) => (
-                <li key={index} className="flex items-start gap-2">
-                  <ExternalLink className="w-4 h-4 text-teal-500 flex-shrink-0 mt-1" />
-                  <span className="text-gray-700">{resource}</span>
-                </li>
-              ))}
+              {lesson.additional_resources.map((resource, index) => {
+                // Parse the resource text to extract URLs and display text
+                let url = null;
+                let displayText = resource;
+                
+                // Common URL patterns in educational resources
+                const patterns = [
+                  // Full URLs with protocol
+                  { regex: /\b(https?:\/\/[\w\-]+(\.[\w\-]+)+(\.[a-z]{2,})([\w\-\._~:/?#[\]@!$&'()*+,;=.]+)?)\b/i },
+                  // URLs with www but no protocol
+                  { regex: /\b(www\.[\w\-]+(\.[\w\-]+)+(\.[a-z]{2,})([\w\-\._~:/?#[\]@!$&'()*+,;=.]+)?)\b/i, prefix: 'https://' },
+                  // Common educational sites
+                  { regex: /\b(khan ?academy|national ?geographic|pbs|ted\.?(?:com|org)?|youtube|nasa\.gov)\b/i, format: (match) => {
+                    const site = match[1].toLowerCase().replace(/\s+/g, '');
+                    if (site === 'khanacademy') return 'https://www.khanacademy.org';
+                    if (site === 'nationalgeographic') return 'https://www.nationalgeographic.com';
+                    if (site === 'pbs') return 'https://www.pbs.org';
+                    if (site.startsWith('ted')) return 'https://www.ted.com';
+                    if (site === 'youtube') return 'https://www.youtube.com';
+                    if (site === 'nasa.gov') return 'https://www.nasa.gov';
+                    return null;
+                  }}
+                ];
+                
+                // Try each pattern until we find a match
+                for (const pattern of patterns) {
+                  const match = resource.match(pattern.regex);
+                  if (match) {
+                    if (pattern.format) {
+                      url = pattern.format(match);
+                    } else {
+                      url = pattern.prefix ? pattern.prefix + match[1] : match[1];
+                    }
+                    break;
+                  }
+                }
+                
+                // If no match found with specific patterns, try the general detection
+                if (!url) {
+                  url = detectUrl(resource);
+                }
+                
+                return (
+                  <li key={index} className="flex items-start gap-2">
+                    <ExternalLink className="w-4 h-4 text-teal-500 flex-shrink-0 mt-1" />
+                    {url ? (
+                      <a 
+                        href={url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-teal-600 hover:text-teal-800 hover:underline"
+                      >
+                        {displayText}
+                      </a>
+                    ) : (
+                      <span className="text-gray-700">{displayText}</span>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           </div>
         )}
