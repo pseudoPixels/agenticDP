@@ -3,6 +3,7 @@ import { Sparkles, Loader2, CheckCircle2, Circle, ChevronDown, Check, Lightbulb 
 import { generateLessonStream, generatePresentationStream, generateWorksheetStream } from '../api';
 import { useAuth } from '../contexts/AuthContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
+import { useNavigation } from '../hooks/useNavigation';
 import posthog from '../posthog';
 import PaywallModal from './PaywallModal';
 
@@ -105,6 +106,7 @@ function AgentProgress({ currentStep, completedSteps, contentType }) {
 function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
   const { user } = useAuth();
   const { showPaywall, setShowPaywall, isTrialActive, isSubscribed, isLifetime, hasExpired, canCreateContent } = useSubscription();
+  const { triggerNavigationReset, goToHome } = useNavigation();
   const [topic, setTopic] = useState('');
   const [status, setStatus] = useState('');
   const [agentStep, setAgentStep] = useState('');
@@ -115,6 +117,12 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
   const [randomPrompts, setRandomPrompts] = useState([]);
   const [placeholderText, setPlaceholderText] = useState('');
   const [isTextareaFocused, setIsTextareaFocused] = useState(false);
+  
+  // Force header to re-render when component mounts
+  useEffect(() => {
+    // Trigger navigation reset on component mount
+    triggerNavigationReset();
+  }, [triggerNavigationReset]);
   
   const contentTypes = [
     'Lesson Plan',
@@ -176,6 +184,10 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
     if (!topic.trim()) {
       return;
     }
+    
+    // Trigger navigation reset before generating content
+    // This ensures header links will work after content generation
+    triggerNavigationReset();
 
     // Track content creation attempt
     posthog.capture('create_button_clicked', { 
@@ -261,6 +273,15 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
               content_type: 'presentation',
               topic_length: topic.length
             });
+            
+            // Trigger navigation reset to ensure header links work
+            triggerNavigationReset();
+            
+            // Trigger again after a short delay to ensure it works
+            setTimeout(() => {
+              triggerNavigationReset();
+            }, 500);
+            
             setTimeout(() => {
               setStatus('');
               setAgentStep('');
@@ -322,6 +343,15 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
               content_type: 'worksheet',
               topic_length: topic.length
             });
+            
+            // Trigger navigation reset to ensure header links work
+            triggerNavigationReset();
+            
+            // Trigger again after a short delay to ensure it works
+            setTimeout(() => {
+              triggerNavigationReset();
+            }, 500);
+            
             setTimeout(() => {
               setStatus('');
               setAgentStep('');
@@ -383,6 +413,15 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
               content_type: 'lesson',
               topic_length: topic.length
             });
+            
+            // Trigger navigation reset to ensure header links work
+            triggerNavigationReset();
+            
+            // Trigger again after a short delay to ensure it works
+            setTimeout(() => {
+              triggerNavigationReset();
+            }, 500);
+            
             setTimeout(() => {
               setStatus('');
               setAgentStep('');
@@ -421,13 +460,22 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
       setIsGenerating(false);
       setAgentStep('');
       setCompletedSteps([]);
+      
+      // Trigger navigation reset even on error
+      triggerNavigationReset();
+      
       // Track general exception error
       posthog.capture('content_generation_error', { 
         content_type: selectedType.toLowerCase(),
         error_type: 'exception',
         error_message: error.message
       });
-      setTimeout(() => setStatus(''), 3000);
+      
+      setTimeout(() => {
+        // Trigger navigation reset again after a delay
+        triggerNavigationReset();
+        setStatus('');
+      }, 3000);
     }
   };
 
@@ -518,7 +566,7 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
               <span>Try one of these suggestions:</span>
             </p>
             <div className="flex flex-wrap gap-2">
-              {randomPrompts.slice(0, 2).map((prompt, index) => (
+              {randomPrompts.slice(0, 4).map((prompt, index) => (
                 <button
                   key={index}
                   type="button"
@@ -528,7 +576,7 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
                   }}
                   className="px-3 py-1.5 text-xs text-gray-700 bg-gray-100 hover:bg-emerald-50 rounded-full transition-colors border border-gray-200"
                 >
-                  {prompt.length > 40 ? prompt.substring(0, 40) + '...' : prompt}
+                  {prompt.length > 20 ? prompt.substring(0, 20) + '...' : prompt}
                 </button>
               ))}
             </div>

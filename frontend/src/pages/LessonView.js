@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import LessonViewer from '../components/LessonViewer';
 import ChatEditor from '../components/ChatEditor';
@@ -7,15 +7,22 @@ import AssignButton from '../components/AssignButton';
 import SaveButton from '../components/SaveButton';
 import DownloadButton from '../components/DownloadButton';
 import resourceService from '../services/resourceService';
+import { useNavigation } from '../hooks/useNavigation';
 
 function LessonView() {
   const { lessonId } = useParams();
-  const navigate = useNavigate();
+  const { navigate, triggerNavigationReset } = useNavigation();
   const [lesson, setLesson] = useState(null);
   const [images, setImages] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  
+  // Force header to re-render when component mounts
+  useEffect(() => {
+    // Trigger navigation reset on component mount
+    triggerNavigationReset();
+  }, [triggerNavigationReset]);
 
   useEffect(() => {
     loadLesson();
@@ -37,6 +44,14 @@ function LessonView() {
         
         setLesson(resourceData.content);
         setImages(resourceData.images || {});
+        
+        // Trigger navigation reset after successfully loading the resource
+        triggerNavigationReset();
+        
+        // Trigger again after a short delay to ensure it works
+        setTimeout(() => {
+          triggerNavigationReset();
+        }, 500);
       } else {
         setError('Failed to load lesson');
       }
@@ -51,6 +66,14 @@ function LessonView() {
   const handleLessonUpdated = (updatedLesson, updatedImages) => {
     setLesson(updatedLesson);
     setImages(updatedImages);
+    
+    // Trigger navigation reset after updating the lesson
+    triggerNavigationReset();
+    
+    // Trigger again after a short delay to ensure it works
+    setTimeout(() => {
+      triggerNavigationReset();
+    }, 500);
   };
   
   const handleProcessingChange = (processing) => {
@@ -69,7 +92,13 @@ function LessonView() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
         <p className="text-red-600 mb-4">{error || 'Lesson not found'}</p>
-        <button onClick={() => navigate('/library')} className="btn-primary">
+        <button 
+          onClick={() => {
+            triggerNavigationReset();
+            navigate('/library', { replace: true });
+          }} 
+          className="btn-primary"
+        >
           Back to Library
         </button>
       </div>

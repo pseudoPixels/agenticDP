@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { Plus, Library, LogOut, Menu, X, User, HelpCircle, ChevronDown, Clock, Crown, Sparkles } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
+import { useNavigation } from '../hooks/useNavigation';
 
 function Header() {
-  const navigate = useNavigate();
+  const { goToHome, goToLibrary, navigate } = useNavigation();
   const location = useLocation();
   const { user, isAuthenticated, signIn, signOut } = useAuth();
   const { subscriptionStatus, isTrialActive, isLifetime, hasExpired, daysRemaining, createPortalSession, setShowPaywall } = useSubscription();
@@ -41,11 +42,6 @@ function Header() {
       return location.pathname === '/';
     }
     return location.pathname.startsWith(path);
-  };
-
-  // Force navigation to home page, ensuring state is reset
-  const goToHome = () => {
-    navigate('/', { replace: true });
   };
 
   return (
@@ -117,7 +113,7 @@ function Header() {
 
             {isAuthenticated && (
               <button
-                onClick={() => navigate('/library', { replace: true })}
+                onClick={goToLibrary}
                 className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-colors ${
                   isActive('/library')
                     ? 'text-emerald-600 bg-emerald-50'
@@ -292,7 +288,7 @@ function Header() {
               <>
                 <button
                   onClick={() => {
-                    navigate('/library', { replace: true });
+                    goToLibrary();
                     setShowMobileMenu(false);
                   }}
                   className={`w-full flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-colors ${

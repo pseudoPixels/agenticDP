@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { SubscriptionProvider } from './contexts/SubscriptionContext';
-import Header from './components/Header';
+import HeaderWrapper from './components/HeaderWrapper';
 import Home from './pages/Home';
 import Library from './pages/Library';
 import LessonView from './pages/LessonView';
@@ -30,7 +30,7 @@ function AppRouter() {
         <Router>
           <PostHogPageView />
           <div className="min-h-screen">
-            <Header />
+            <HeaderWrapper />
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/library" element={<Library />} />

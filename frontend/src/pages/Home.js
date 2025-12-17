@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Download } from 'lucide-react';
 import LessonGenerator from '../components/LessonGenerator';
 import LessonViewer from '../components/LessonViewer';
@@ -12,6 +12,7 @@ import PaywallModal from '../components/PaywallModal';
 import { downloadPresentation } from '../api';
 import { useSubscription } from '../contexts/SubscriptionContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useNavigation } from '../hooks/useNavigation';
 
 function Home() {
   const { user } = useAuth();
@@ -21,6 +22,15 @@ function Home() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [savedResourceId, setSavedResourceId] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  
+  // Use the navigation hook to ensure header links work properly
+  const { triggerNavigationReset } = useNavigation();
+  
+  // Force header to re-render when component mounts and when resource is generated
+  useEffect(() => {
+    // Trigger navigation reset on component mount
+    triggerNavigationReset();
+  }, [triggerNavigationReset]);
 
   const handleLessonGenerated = (lesson, images) => {
     console.log('Home - handleLessonGenerated called with images:', Object.keys(images));
@@ -31,11 +41,27 @@ function Home() {
       return merged;
     });
     setSavedResourceId(null); // Reset saved state for new lesson
+    
+    // Trigger a navigation reset event to ensure header links work properly
+    triggerNavigationReset();
+    
+    // Trigger again after a short delay to ensure it works
+    setTimeout(() => {
+      triggerNavigationReset();
+    }, 500);
   };
 
   const handleLessonUpdated = (updatedLesson, updatedImages) => {
     setCurrentLesson(updatedLesson);
     setLessonImages(updatedImages);
+    
+    // Trigger a navigation reset event to ensure header links work properly
+    triggerNavigationReset();
+    
+    // Trigger again after a short delay to ensure it works
+    setTimeout(() => {
+      triggerNavigationReset();
+    }, 500);
   };
   
   const handleProcessingChange = (processing) => {
@@ -44,6 +70,14 @@ function Home() {
 
   const handleSaved = (resourceId) => {
     setSavedResourceId(resourceId);
+    
+    // Trigger a navigation reset event to ensure header links work properly after saving
+    triggerNavigationReset();
+    
+    // Trigger again after a short delay to ensure it works
+    setTimeout(() => {
+      triggerNavigationReset();
+    }, 500);
   };
 
   const handleDownloadPresentation = async () => {
