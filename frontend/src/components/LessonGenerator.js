@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Sparkles, Loader2, CheckCircle2, Circle, ChevronDown, Check, Lightbulb } from 'lucide-react';
+import './scrollbar-hide.css'; // This will be created next
 import { generateLessonStream, generatePresentationStream, generateWorksheetStream } from '../api';
 import { useAuth } from '../contexts/AuthContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
@@ -509,31 +510,35 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
               }}
               onBlur={() => setIsTextareaFocused(false)}
               placeholder="Describe what you want to create..."
-              className={`w-full px-4 py-4 text-lg text-gray-700 placeholder-gray-400 bg-transparent border-0 rounded-lg resize-none focus:outline-none focus:ring-0 transition-all ease-in-out duration-500 ${isTextareaFocused ? 'h-30' : 'h-10'}`}
+              className={`w-full px-4 py-4 text-lg text-gray-700 placeholder-gray-400 bg-transparent border-0 rounded-lg resize-none focus:outline-none focus:ring-0 transition-all ease-in-out duration-500 scrollbar-hide overflow-hidden ${isTextareaFocused ? 'h-30' : 'h-10'}`}
               disabled={isGenerating}
             />
           </div>
 
           {/* Bottom Controls Row */}
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             {/* Content Type Dropdown and Lightbulb */}
-            <div className="flex items-center gap-2">
-              <div className="relative">
+            <div className="flex items-center gap-2 flex-shrink">
+              <div className="relative flex-shrink">
                 <button
                   type="button"
-                  onClick={() => setShowTypeDropdown(!showTypeDropdown)}
-                  onBlur={() => setTimeout(() => setShowTypeDropdown(false), 200)}
-                  className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-full text-left text-gray-800 hover:bg-gray-50 transition-colors"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setShowTypeDropdown(!showTypeDropdown);
+                  }}
+                  onBlur={() => setTimeout(() => setShowTypeDropdown(false), 300)}
+                  className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 bg-white border border-gray-200 rounded-full text-left text-gray-800 hover:bg-gray-50 transition-colors min-w-0 max-w-full"
                   disabled={isGenerating}
                 >
-                  <Sparkles className="w-4 h-4 text-teal-500" />
-                  <span className="font-medium">{selectedType}</span>
-                  <ChevronDown className="w-4 h-4 text-gray-500" />
+                  <Sparkles className="w-4 h-4 text-teal-500 flex-shrink-0" />
+                  <span className="font-medium text-sm sm:text-base whitespace-nowrap truncate max-w-[100px] sm:max-w-[150px]">{selectedType}</span>
+                  <ChevronDown className="w-4 h-4 text-gray-500 flex-shrink-0" />
                 </button>
 
               {/* Dropdown Menu */}
               {showTypeDropdown && (
-                <div className="absolute top-full mt-2 left-0 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                <div className="absolute top-full mt-2 left-0 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50 overflow-visible">
                   {contentTypes.map((type) => (
                     <button
                       key={type}
@@ -544,7 +549,7 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
                         // Track content type selection
                         posthog.capture('content_type_selected', { content_type: type });
                       }}
-                      className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 transition-colors flex items-center justify-between"
+                      className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-emerald-50 transition-colors flex items-center justify-between cursor-pointer"
                     >
                       <span>{type}</span>
                       {selectedType === type && (
@@ -572,12 +577,12 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
             <button
               type="submit"
               disabled={isGenerating || !topic.trim()}
-              className="px-8 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-full transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 sm:px-8 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-full transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
             >
               {isGenerating ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  Creating...
+                  {/* Creating... */}
                 </>
               ) : (
                 <>Create</>
