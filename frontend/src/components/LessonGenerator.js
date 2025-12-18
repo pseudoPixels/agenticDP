@@ -480,70 +480,16 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
   };
 
   return (
-    <div className="min-h-[80vh] flex flex-col items-center justify-center px-4">
+    <div className="min-h-screen bg-gradient-to-b from-blue-200 to-purple-200 flex flex-col items-center py-12 px-4">
       {/* Main Heading */}
-      <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 text-center mb-12 max-w-4xl w-full leading-tight">
-        {user ? (
-          <>
-            Hi {user.name?.split(' ')[0]}, create <RotatingText />
-            <br />
-            for your homeschool today
-          </>
-        ) : (
-          <>
-            Create <RotatingText />
-            <br />
-            for your homeschool today
-          </>
-        )}
+      <h1 className="text-3xl md:text-4xl font-bold text-gray-800 text-center mb-8">
+        Create resources for your homeschool
       </h1>
 
       {/* Main Card */}
-      <div className={`w-full max-w-4xl bg-white rounded-2xl border p-8 sm:p-12 transition-all duration-300 ${
-        isTextareaFocused 
-          ? 'shadow-[0_0_30px_rgba(16,185,129,0.15),0_0_60px_rgba(59,130,246,0.1),0_0_90px_rgba(168,85,247,0.05)] border-emerald-200' 
-          : 'shadow-sm border-gray-200'
-      }`}>
-        <form onSubmit={handleGenerate} className="space-y-6">
-          {/* Content Type Dropdown */}
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setShowTypeDropdown(!showTypeDropdown)}
-              onBlur={() => setTimeout(() => setShowTypeDropdown(false), 200)}
-              className="w-full sm:w-64 flex items-center justify-between px-4 py-3 bg-white border border-gray-300 rounded-lg text-left text-gray-900 hover:bg-gray-50 transition-colors"
-              disabled={isGenerating}
-            >
-              <span className="font-medium">{selectedType}</span>
-              <ChevronDown className="w-5 h-5 text-gray-500" />
-            </button>
-
-            {/* Dropdown Menu */}
-            {showTypeDropdown && (
-              <div className="absolute top-full mt-2 left-0 w-full sm:w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
-                {contentTypes.map((type) => (
-                  <button
-                    key={type}
-                    type="button"
-                    onClick={() => {
-                      setSelectedType(type);
-                      setShowTypeDropdown(false);
-                      // Track content type selection
-                      posthog.capture('content_type_selected', { content_type: type });
-                    }}
-                    className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 transition-colors flex items-center justify-between"
-                  >
-                    <span>{type}</span>
-                    {selectedType === type && (
-                      <Check className="w-4 h-4 text-emerald-500" />
-                    )}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Large Text Area */}
+      <div className="w-full max-w-3xl bg-white rounded-3xl shadow-lg p-6 mb-8">
+        <form onSubmit={handleGenerate} className="space-y-4">
+          {/* Text Area */}
           <div>
             <textarea
               value={topic}
@@ -553,53 +499,69 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
                 posthog.capture('textarea_focused');
               }}
               onBlur={() => setIsTextareaFocused(false)}
-              placeholder="Write what you want to create..."
-              className="w-full h-32 px-4 py-4 text-base text-gray-900 placeholder-gray-400 bg-white border-0 rounded-lg resize-none focus:outline-none focus:ring-0"
+              placeholder="Describe what you want to create..."
+              className="w-full px-4 py-4 text-lg text-gray-700 placeholder-gray-400 bg-transparent border-0 rounded-lg resize-none focus:outline-none focus:ring-0"
               disabled={isGenerating}
             />
           </div>
-          
-          {/* Clickable Suggestions */}
-          <div className="mb-4">
-            <p className="text-sm text-gray-500 mb-2 flex items-center justify-center gap-1.5">
-              <Lightbulb className="w-4 h-4 text-emerald-500" />
-              <span>Try one of these suggestions:</span>
-            </p>
-            <div className="flex flex-wrap gap-2 justify-center">
-              {randomPrompts.slice(0, 4).map((prompt, index) => (
-                <button
-                  key={index}
-                  type="button"
-                  onClick={() => {
-                    setTopic(prompt);
-                    posthog.capture('suggestion_selected', { prompt });
-                  }}
-                  className="px-3 py-1.5 text-xs text-gray-700 bg-gray-100 hover:bg-emerald-50 rounded-full transition-colors border border-gray-200"
-                >
-                  {prompt.length > 20 ? prompt.substring(0, 20) + '...' : prompt}
-                </button>
-              ))}
-            </div>
-          </div>
 
-          {/* Create Button */}
-          <button
-            type="submit"
-            disabled={isGenerating || !topic.trim()}
-            className="w-full py-4 bg-gradient-to-r from-emerald-400 to-teal-400 hover:from-emerald-500 hover:to-teal-500 text-white font-medium rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isGenerating ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                Creating...
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-5 h-5" />
-                Create
-              </>
-            )}
-          </button>
+          {/* Bottom Controls Row */}
+          <div className="flex items-center justify-between">
+            {/* Content Type Dropdown */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setShowTypeDropdown(!showTypeDropdown)}
+                onBlur={() => setTimeout(() => setShowTypeDropdown(false), 200)}
+                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-full text-left text-gray-800 hover:bg-gray-50 transition-colors"
+                disabled={isGenerating}
+              >
+                <Sparkles className="w-4 h-4 text-teal-500" />
+                <span className="font-medium">{selectedType}</span>
+                <ChevronDown className="w-4 h-4 text-gray-500" />
+              </button>
+
+              {/* Dropdown Menu */}
+              {showTypeDropdown && (
+                <div className="absolute top-full mt-2 left-0 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                  {contentTypes.map((type) => (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => {
+                        setSelectedType(type);
+                        setShowTypeDropdown(false);
+                        // Track content type selection
+                        posthog.capture('content_type_selected', { content_type: type });
+                      }}
+                      className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-emerald-50 transition-colors flex items-center justify-between"
+                    >
+                      <span>{type}</span>
+                      {selectedType === type && (
+                        <Check className="w-4 h-4 text-emerald-500" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          
+            {/* Create Button */}
+            <button
+              type="submit"
+              disabled={isGenerating || !topic.trim()}
+              className="px-8 py-2 bg-gray-500 hover:bg-gray-600 text-white font-medium rounded-full transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isGenerating ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                <>Create</>
+              )}
+            </button>
+          </div>
         </form>
 
         {/* Agent Progress */}
@@ -620,6 +582,40 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
         )}
       </div>
 
+      {/* Example Prompts Section */}
+      <div className="w-full max-w-3xl">
+        <h2 className="text-center text-gray-700 mb-4">Example prompts:</h2>
+        <div className="flex flex-wrap gap-3 justify-center">
+          <button
+            type="button"
+            onClick={() => setTopic("Create a child-friendly math worksheet")}
+            className="px-5 py-3 text-gray-700 bg-white hover:bg-gray-50 rounded-full transition-colors border border-gray-200 shadow-sm"
+          >
+            Create a child-friendly math worksheet
+          </button>
+          <button
+            type="button"
+            onClick={() => setTopic("Explain photosynthesis for 3rd grade")}
+            className="px-5 py-3 text-gray-700 bg-white hover:bg-gray-50 rounded-full transition-colors border border-gray-200 shadow-sm"
+          >
+            Explain photosynthesis for 3rd grade
+          </button>
+          <button
+            type="button"
+            onClick={() => setTopic("Make a spelling quiz for beginners")}
+            className="px-5 py-3 text-gray-700 bg-white hover:bg-gray-50 rounded-full transition-colors border border-gray-200 shadow-sm"
+          >
+            Make a spelling quiz for beginners
+          </button>
+          <button
+            type="button"
+            onClick={() => setTopic("Create a reading comprehension activity")}
+            className="px-5 py-3 text-gray-700 bg-white hover:bg-gray-50 rounded-full transition-colors border border-gray-200 shadow-sm"
+          >
+            Create a reading comprehension activity
+          </button>
+        </div>
+      </div>
       
       {/* Render PaywallModal directly in LessonGenerator */}
       <PaywallModal isOpen={showPaywall} onClose={() => setShowPaywall(false)} />
