@@ -509,7 +509,7 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
               }}
               onBlur={() => setIsTextareaFocused(false)}
               placeholder="Describe what you want to create..."
-              className={`w-full px-4 py-4 text-lg text-gray-700 placeholder-gray-400 bg-transparent border-0 rounded-lg resize-none focus:outline-none focus:ring-0 transition-all duration-300 ${isTextareaFocused ? 'h-40' : 'h-32'}`}
+              className={`w-full px-4 py-4 text-lg text-gray-700 placeholder-gray-400 bg-transparent border-0 rounded-lg resize-none focus:outline-none focus:ring-0 transition-all duration-300 ${isTextareaFocused ? 'h-36' : 'h-28'}`}
               disabled={isGenerating}
             />
           </div>
@@ -572,7 +572,7 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
             <button
               type="submit"
               disabled={isGenerating || !topic.trim()}
-              className="px-8 py-2 bg-gray-500 hover:bg-gray-600 text-white font-medium rounded-full transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-8 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-full transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isGenerating ? (
                 <>
