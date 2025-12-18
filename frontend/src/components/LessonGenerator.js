@@ -115,6 +115,7 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
   const [showTypeDropdown, setShowTypeDropdown] = useState(false);
   const [showIdeasPopup, setShowIdeasPopup] = useState(false);
   const [randomPrompts, setRandomPrompts] = useState([]);
+  const [modalSuggestions, setModalSuggestions] = useState([]);
   const [placeholderText, setPlaceholderText] = useState('');
   const [isTextareaFocused, setIsTextareaFocused] = useState(false);
   
@@ -157,7 +158,15 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
   useEffect(() => {
     const shuffled = [...homeschool_prompts].sort(() => Math.random() - 0.5);
     setRandomPrompts(shuffled.slice(0, 3));
-  }, [homeschool_prompts]);
+  }, []); // Empty dependency array to run only once
+
+  // Set modal suggestions when the modal is opened
+  useEffect(() => {
+    if (showIdeasPopup && modalSuggestions.length === 0) {
+      const shuffled = [...homeschool_prompts].sort(() => Math.random() - 0.5);
+      setModalSuggestions(shuffled.slice(0, 3));
+    }
+  }, [showIdeasPopup, modalSuggestions.length, homeschool_prompts]);
 
   // Simulate agent steps before actual generation
   useEffect(() => {
@@ -487,7 +496,7 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
       </h1>
 
       {/* Main Card */}
-      <div className="w-full max-w-3xl bg-white rounded-3xl shadow-[0_0_30px_rgba(0,0,0,0.1)] p-6">
+      <div className="w-full max-w-3xl bg-white rounded-3xl shadow-[0_0_20px_rgba(16,185,129,0.2),0_0_40px_rgba(59,130,246,0.1),0_0_60px_rgba(168,85,247,0.05)] p-6">
         <form onSubmit={handleGenerate} className="space-y-4">
           {/* Text Area */}
           <div>
@@ -500,7 +509,7 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
               }}
               onBlur={() => setIsTextareaFocused(false)}
               placeholder="Describe what you want to create..."
-              className="w-full px-4 py-4 text-lg text-gray-700 placeholder-gray-400 bg-transparent border-0 rounded-lg resize-none focus:outline-none focus:ring-0"
+              className={`w-full px-4 py-4 text-lg text-gray-700 placeholder-gray-400 bg-transparent border-0 rounded-lg resize-none focus:outline-none focus:ring-0 transition-all duration-300 ${isTextareaFocused ? 'h-40' : 'h-32'}`}
               disabled={isGenerating}
             />
           </div>
@@ -605,7 +614,11 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold text-gray-800">Try these ideas</h3>
               <button 
-                onClick={() => setShowIdeasPopup(false)}
+                onClick={() => {
+                  setShowIdeasPopup(false);
+                  // Reset modal suggestions when closing
+                  setModalSuggestions([]);
+                }}
                 className="p-1 rounded-full hover:bg-gray-100"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
@@ -614,7 +627,7 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
               </button>
             </div>
             <div className="space-y-3">
-              {randomPrompts.map((prompt, index) => (
+              {modalSuggestions.map((prompt, index) => (
                 <button
                   key={index}
                   onClick={() => {
