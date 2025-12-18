@@ -156,8 +156,8 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
   // Generate random prompts when component mounts
   useEffect(() => {
     const shuffled = [...homeschool_prompts].sort(() => Math.random() - 0.5);
-    setRandomPrompts(shuffled.slice(0, 5));
-  }, []);
+    setRandomPrompts(shuffled.slice(0, 3));
+  }, [homeschool_prompts]);
 
   // Simulate agent steps before actual generation
   useEffect(() => {
@@ -480,14 +480,14 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-200 to-purple-200 flex flex-col items-center py-12 px-4">
+    <div className="min-h-screen bg-white flex flex-col items-center justify-center px-4">
       {/* Main Heading */}
       <h1 className="text-3xl md:text-4xl font-bold text-gray-800 text-center mb-8">
         Create resources for your homeschool
       </h1>
 
       {/* Main Card */}
-      <div className="w-full max-w-3xl bg-white rounded-3xl shadow-lg p-6 mb-8">
+      <div className="w-full max-w-3xl bg-white rounded-3xl shadow-[0_0_30px_rgba(0,0,0,0.1)] p-6">
         <form onSubmit={handleGenerate} className="space-y-4">
           {/* Text Area */}
           <div>
@@ -507,19 +507,20 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
 
           {/* Bottom Controls Row */}
           <div className="flex items-center justify-between">
-            {/* Content Type Dropdown */}
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setShowTypeDropdown(!showTypeDropdown)}
-                onBlur={() => setTimeout(() => setShowTypeDropdown(false), 200)}
-                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-full text-left text-gray-800 hover:bg-gray-50 transition-colors"
-                disabled={isGenerating}
-              >
-                <Sparkles className="w-4 h-4 text-teal-500" />
-                <span className="font-medium">{selectedType}</span>
-                <ChevronDown className="w-4 h-4 text-gray-500" />
-              </button>
+            {/* Content Type Dropdown and Lightbulb */}
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowTypeDropdown(!showTypeDropdown)}
+                  onBlur={() => setTimeout(() => setShowTypeDropdown(false), 200)}
+                  className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-full text-left text-gray-800 hover:bg-gray-50 transition-colors"
+                  disabled={isGenerating}
+                >
+                  <Sparkles className="w-4 h-4 text-teal-500" />
+                  <span className="font-medium">{selectedType}</span>
+                  <ChevronDown className="w-4 h-4 text-gray-500" />
+                </button>
 
               {/* Dropdown Menu */}
               {showTypeDropdown && (
@@ -544,6 +545,18 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
                   ))}
                 </div>
               )}
+              </div>
+              
+              {/* Lightbulb Button */}
+              <button
+                type="button"
+                onClick={() => setShowIdeasPopup(true)}
+                className="flex items-center justify-center p-2 bg-white border border-gray-200 rounded-full text-gray-800 hover:bg-gray-50 transition-colors"
+                disabled={isGenerating}
+                aria-label="Show suggestions"
+              >
+                <Lightbulb className="w-4 h-4 text-amber-500" />
+              </button>
             </div>
           
             {/* Create Button */}
@@ -581,44 +594,44 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
           </div>
         )}
       </div>
-
-      {/* Example Prompts Section */}
-      <div className="w-full max-w-3xl">
-        <h2 className="text-center text-gray-700 mb-4">Example prompts:</h2>
-        <div className="flex flex-wrap gap-3 justify-center">
-          <button
-            type="button"
-            onClick={() => setTopic("Create a child-friendly math worksheet")}
-            className="px-5 py-3 text-gray-700 bg-white hover:bg-gray-50 rounded-full transition-colors border border-gray-200 shadow-sm"
-          >
-            Create a child-friendly math worksheet
-          </button>
-          <button
-            type="button"
-            onClick={() => setTopic("Explain photosynthesis for 3rd grade")}
-            className="px-5 py-3 text-gray-700 bg-white hover:bg-gray-50 rounded-full transition-colors border border-gray-200 shadow-sm"
-          >
-            Explain photosynthesis for 3rd grade
-          </button>
-          <button
-            type="button"
-            onClick={() => setTopic("Make a spelling quiz for beginners")}
-            className="px-5 py-3 text-gray-700 bg-white hover:bg-gray-50 rounded-full transition-colors border border-gray-200 shadow-sm"
-          >
-            Make a spelling quiz for beginners
-          </button>
-          <button
-            type="button"
-            onClick={() => setTopic("Create a reading comprehension activity")}
-            className="px-5 py-3 text-gray-700 bg-white hover:bg-gray-50 rounded-full transition-colors border border-gray-200 shadow-sm"
-          >
-            Create a reading comprehension activity
-          </button>
-        </div>
-      </div>
       
       {/* Render PaywallModal directly in LessonGenerator */}
       <PaywallModal isOpen={showPaywall} onClose={() => setShowPaywall(false)} />
+      
+      {/* Suggestions Modal */}
+      {showIdeasPopup && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-800">Try these ideas</h3>
+              <button 
+                onClick={() => setShowIdeasPopup(false)}
+                className="p-1 rounded-full hover:bg-gray-100"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
+            <div className="space-y-3">
+              {randomPrompts.map((prompt, index) => (
+                <button
+                  key={index}
+                  onClick={() => {
+                    setTopic(prompt);
+                    setShowIdeasPopup(false);
+                    posthog.capture('suggestion_selected', { prompt });
+                  }}
+                  className="w-full text-left p-3 rounded-lg hover:bg-blue-50 transition-colors border border-gray-100 flex items-start gap-3"
+                >
+                  <Lightbulb className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                  <span className="text-gray-700">{prompt}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
