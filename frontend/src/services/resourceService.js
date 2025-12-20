@@ -10,6 +10,19 @@ class ResourceService {
     const response = await axios.post('/api/resources', resourceData, { headers });
     return response.data;
   }
+  
+  /**
+   * Save a resource anonymously (no auth required)
+   * Used for saving generated resources before the user has logged in
+   */
+  async saveAnonymousResource(resourceId, resourceType, content, images, title) {
+    const response = await axios.post(`/api/anonymous/save/${resourceType}/${resourceId}`, {
+      content,
+      images,
+      title
+    });
+    return response.data;
+  }
 
   /**
    * Get a specific resource

@@ -27,6 +27,75 @@ app.register_blueprint(resources_bp, url_prefix='/api')
 app.register_blueprint(students_bp, url_prefix='/api')
 app.register_blueprint(subscription_bp, url_prefix='/api')
 
+# Anonymous Resource Endpoints
+@app.route('/api/anonymous/save/<resource_type>/<resource_id>', methods=['POST'])
+def save_anonymous_resource(resource_type, resource_id):
+    """Save a resource without requiring authentication
+    
+    This endpoint is used for saving resources that were generated but not yet saved,
+    allowing users to save their work even if they're not logged in.
+    """
+    try:
+        data = request.json
+        content = data.get('content')
+        images = data.get('images', {})
+        title = data.get('title', f'Untitled {resource_type.capitalize()}')
+        
+        if not content:
+            return jsonify({"error": "Content is required"}), 400
+            
+        # Validate resource type
+        valid_types = ['lesson', 'worksheet', 'presentation']
+        if resource_type not in valid_types:
+            return jsonify({"error": "Invalid resource type"}), 400
+        
+        # Check if resource already exists
+        existing_resource = None
+        if firebase_service.enabled:
+            existing_resource = firebase_service.get_resource(resource_id)
+        
+        if existing_resource:
+            # Update existing resource
+            success = firebase_service.update_resource(resource_id, {
+                'content': content,
+                'images': images,
+                'title': title
+            })
+            
+            if success:
+                return jsonify({
+                    "success": True,
+                    "message": f"{resource_type.capitalize()} updated successfully",
+                    "resource_id": resource_id
+                })
+            else:
+                return jsonify({"error": f"Failed to update {resource_type}"}), 500
+        else:
+            # Create new resource
+            try:
+                firebase_service.save_resource(
+                    user_id="anonymous",
+                    resource_data={
+                        'resource_type': resource_type,
+                        'title': title,
+                        'content': content,
+                        'images': images
+                    },
+                    resource_id=resource_id
+                )
+                
+                return jsonify({
+                    "success": True,
+                    "message": f"{resource_type.capitalize()} saved successfully",
+                    "resource_id": resource_id
+                })
+            except Exception as e:
+                print(f"Error saving anonymous resource: {e}")
+                return jsonify({"error": f"Failed to save {resource_type}"}), 500
+    except Exception as e:
+        print(f"Error in save_anonymous_resource: {e}")
+        return jsonify({"error": str(e)}), 500
+
 # Initialize agents
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 if not GEMINI_API_KEY:

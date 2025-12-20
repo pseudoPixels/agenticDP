@@ -9,63 +9,87 @@ function SaveButton({ lesson, images, resourceId, onSaved }) {
   const [saved, setSaved] = useState(false);
 
   const handleSave = async () => {
-    // Check if user is authenticated
-    if (!isAuthenticated) {
-      try {
-        await signIn();
-      } catch (error) {
-        console.error('Authentication failed:', error);
-        return;
-      }
-    }
-
     // Save or update the lesson
     try {
       setSaving(true);
       
+      // Determine content type
+      const contentType = lesson.contentType || 'lesson';
+      const resourceType = contentType === 'presentation' ? 'presentation' 
+                         : contentType === 'worksheet' ? 'worksheet' 
+                         : 'lesson';
+      
+      // Log save attempt
+      console.log(`SaveButton: Attempting to save ${resourceType} with ID: ${resourceId || 'new'}`);
+      console.log(`SaveButton: User authenticated: ${isAuthenticated}`);
+      console.log(`SaveButton: Images being saved:`, Object.keys(images));
+      
+      let savedResourceId = resourceId;
+      
       if (resourceId) {
         // Update existing resource
-        console.log('SaveButton: Saving resource', resourceId);
-        console.log('SaveButton: Images being saved:', Object.keys(images));
-        // Log first 100 chars of each image to see if they're URLs or base64
-        Object.entries(images).forEach(([key, value]) => {
-          if (typeof value === 'string') {
-            console.log(`SaveButton: Image ${key}:`, value.substring(0, 100));
-          }
-        });
-        await resourceService.updateResource(resourceId, {
-          content: lesson,
-          images: images
-        });
+        if (isAuthenticated) {
+          // If authenticated, use regular update
+          await resourceService.updateResource(resourceId, {
+            content: lesson,
+            images: images
+          });
+        } else {
+          // If not authenticated, use anonymous save
+          const response = await resourceService.saveAnonymousResource(
+            resourceId,
+            resourceType,
+            lesson,
+            images,
+            lesson.title
+          );
+          console.log('Anonymous save response:', response);
+        }
       } else {
         // Create new resource
-        // Determine resource type from content
-        const contentType = lesson.contentType || 'lesson';
-        const resourceType = contentType === 'presentation' ? 'presentation' 
-                           : contentType === 'worksheet' ? 'worksheet' 
-                           : 'lesson';
-        
-        const resourceData = {
-          resource_type: resourceType,
-          title: lesson.title,
-          content: lesson,
-          images: images,
-          topic: lesson.topic,
-          version: lesson.version
-        };
+        if (isAuthenticated) {
+          // If authenticated, use regular save
+          const resourceData = {
+            resource_type: resourceType,
+            title: lesson.title,
+            content: lesson,
+            images: images,
+            topic: lesson.topic,
+            version: lesson.version
+          };
 
-        const response = await resourceService.saveResource(resourceData);
+          const response = await resourceService.saveResource(resourceData);
+          savedResourceId = response.resource_id;
+        } else {
+          // If not authenticated, use anonymous save with generated ID
+          const tempId = lesson.id || `temp-${Date.now()}`;
+          const response = await resourceService.saveAnonymousResource(
+            tempId,
+            resourceType,
+            lesson,
+            images,
+            lesson.title
+          );
+          savedResourceId = tempId;
+          console.log('Anonymous save response:', response);
+        }
         
-        if (onSaved) {
-          onSaved(response.resource_id);
+        if (onSaved && savedResourceId) {
+          onSaved(savedResourceId);
         }
       }
       
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (error) {
-      console.error('Error saving lesson:', error);
-      alert('Failed to save lesson. Please try again.');
+      // Determine content type for error message
+      const contentType = lesson.contentType || 'lesson';
+      const resourceTypeName = contentType === 'presentation' ? 'presentation' 
+                            : contentType === 'worksheet' ? 'worksheet' 
+                            : 'lesson';
+      
+      console.error(`Error saving ${resourceTypeName}:`, error);
+      alert(`Failed to save ${resourceTypeName}. Please try again.`);
     } finally {
       setSaving(false);
     }
