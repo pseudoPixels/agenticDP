@@ -220,16 +220,26 @@ class FirebaseService:
     
     # ==================== Resource Management ====================
     
-    def save_resource(self, user_id: str, resource_data: Dict) -> str:
+    def save_resource(self, user_id: str, resource_data: Dict, resource_id: str = None) -> str:
         """
         Save a resource (lesson, worksheet, etc.) for a user
         Returns the resource ID
+        
+        Args:
+            user_id: The user ID to associate with the resource
+            resource_data: The resource data to save
+            resource_id: Optional. If provided, use this ID instead of generating one
         """
         if not self.enabled:
             raise Exception("Firebase is not enabled")
         
-        resource_ref = self.db.collection('resources').document()
-        resource_id = resource_ref.id
+        if resource_id:
+            # Use the provided ID
+            resource_ref = self.db.collection('resources').document(resource_id)
+        else:
+            # Generate a new ID
+            resource_ref = self.db.collection('resources').document()
+            resource_id = resource_ref.id
         
         # Handle images - ALWAYS use Firebase Storage (required)
         if 'images' in resource_data and resource_data['images']:
@@ -270,27 +280,43 @@ class FirebaseService:
     
     def get_resource(self, resource_id: str) -> Optional[Dict]:
         """Get a specific resource by ID"""
-        resource_ref = self.db.collection('resources').document(resource_id)
-        resource_doc = resource_ref.get()
-        
-        if resource_doc.exists:
-            data = resource_doc.to_dict()
-            # Parse content JSON string back to object
-            if 'content' in data and isinstance(data['content'], str):
-                try:
-                    data['content'] = json.loads(data['content'])
-                except:
-                    pass
+        if not self.enabled:
+            return None
             
-            # Images are stored as URLs in Firebase Storage
-            # No need to load from separate collection anymore
+        try:
+            resource_ref = self.db.collection('resources').document(resource_id)
+            resource_doc = resource_ref.get()
             
-            return data
+            if resource_doc.exists:
+                data = resource_doc.to_dict()
+                # Parse content JSON string back to object
+                if 'content' in data and isinstance(data['content'], str):
+                    try:
+                        data['content'] = json.loads(data['content'])
+                    except:
+                        pass
+                
+                # Images are stored as URLs in Firebase Storage
+                # No need to load from separate collection anymore
+                
+                return data
+        except Exception as e:
+            print(f"Error getting resource {resource_id}: {e}")
         return None
     
     def update_resource(self, resource_id: str, updates: Dict) -> bool:
         """Update a resource"""
+        if not self.enabled:
+            return False
+            
         try:
+            # Check if resource exists first
+            resource_ref = self.db.collection('resources').document(resource_id)
+            resource_doc = resource_ref.get()
+            
+            if not resource_doc.exists:
+                raise Exception(f"Resource {resource_id} does not exist")
+            
             # Handle images - check if any are base64 and need uploading
             if 'images' in updates and updates['images']:
                 images_to_upload = {}

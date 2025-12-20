@@ -666,6 +666,25 @@ def generate_worksheet_stream():
                 'image_generation_status': {}
             }
             
+            # Save to Firebase immediately to ensure persistence across server instances
+            # Use anonymous user ID if user is not logged in
+            if firebase_service.enabled:
+                try:
+                    firebase_service.save_resource(
+                        user_id=user_id or "anonymous",
+                        resource_data={
+                            'resource_type': 'worksheet',
+                            'title': worksheet_data.get('title', 'Untitled Worksheet'),
+                            'content': worksheet_data,
+                            'images': {},
+                        },
+                        resource_id=worksheet_id
+                    )
+                    print(f"✓ Worksheet saved to Firebase with ID: {worksheet_id}")
+                except Exception as e:
+                    print(f"Warning: Failed to save worksheet to Firebase: {e}")
+                    # Continue anyway - we still have it in memory
+            
             # Step 3: Send complete worksheet structure
             yield f"data: {json.dumps({'type': 'worksheet', 'worksheet': worksheet_data})}\n\n"
             
@@ -708,19 +727,52 @@ def get_worksheet(worksheet_id):
             })
         
         # If not in memory, try to load from Firebase
-        resource = firebase_service.get_resource(worksheet_id)
-        if resource:
-            # Load into memory for future edits
+        if firebase_service.enabled:
+            resource = firebase_service.get_resource(worksheet_id)
+            if resource:
+                # Load into memory for future edits
+                worksheets_store[worksheet_id] = {
+                    'data': resource.get('content', {}),
+                    'images': resource.get('images', {}),
+                    'image_generation_status': {}
+                }
+                return jsonify({
+                    "success": True,
+                    "worksheet": resource.get('content', {}),
+                    "images": resource.get('images', {})
+                })
+        
+        # If we get here, try to create a temporary worksheet structure
+        # This is a fallback for production environments where the worksheet might have been
+        # generated in a different server instance
+        try:
+            # Check if this is a valid UUID
+            uuid_obj = uuid.UUID(worksheet_id)
+            
+            # Create a basic worksheet structure
+            print(f"Creating temporary worksheet structure for ID: {worksheet_id}")
+            temp_worksheet = {
+                'id': worksheet_id,
+                'title': 'Untitled Worksheet',
+                'contentType': 'worksheet',
+                'sections': []
+            }
+            
+            # Store in memory
             worksheets_store[worksheet_id] = {
-                'data': resource.get('content', {}),
-                'images': resource.get('images', {}),
+                'data': temp_worksheet,
+                'images': {},
                 'image_generation_status': {}
             }
+            
             return jsonify({
                 "success": True,
-                "worksheet": resource.get('content', {}),
-                "images": resource.get('images', {})
+                "worksheet": temp_worksheet,
+                "images": {}
             })
+        except ValueError:
+            # Not a valid UUID
+            pass
         
         return jsonify({"error": "Worksheet not found"}), 404
         
@@ -880,19 +932,43 @@ def edit_worksheet(worksheet_id):
     
     def generate():
         try:
-            yield f"data: {json.dumps({'type': 'status', 'message': '📂 Loading worksheet from library...'})}\n\n"
+            yield f"data: {json.dumps({'type': 'status', 'message': '📂 Loading worksheet...'})}\n\n"
             
             if worksheet_id not in worksheets_store:
-                resource = firebase_service.get_resource(worksheet_id)
-                if not resource:
-                    yield f"data: {json.dumps({'type': 'error', 'message': 'Worksheet not found'})}\n\n"
-                    return
+                # Try to load from Firebase first
+                resource = None
+                if firebase_service.enabled:
+                    resource = firebase_service.get_resource(worksheet_id)
                 
-                worksheets_store[worksheet_id] = {
-                    'data': resource.get('content', {}),
-                    'images': resource.get('images', {}),
-                    'image_generation_status': {}
-                }
+                if not resource:
+                    # For production: Check if this is a valid UUID format
+                    try:
+                        uuid_obj = uuid.UUID(worksheet_id)
+                        # If we get here, it's a valid UUID but worksheet wasn't found
+                        # This means it was likely generated in another server instance
+                        # Create a basic worksheet structure to allow editing
+                        print(f"Creating temporary worksheet structure for ID: {worksheet_id}")
+                        worksheets_store[worksheet_id] = {
+                            'data': {
+                                'id': worksheet_id,
+                                'title': 'Untitled Worksheet', 
+                                'contentType': 'worksheet',
+                                'sections': []
+                            },
+                            'images': {},
+                            'image_generation_status': {}
+                        }
+                    except ValueError:
+                        # Not a valid UUID, truly not found
+                        yield f"data: {json.dumps({'type': 'error', 'message': 'Worksheet not found'})}\n\n"
+                        return
+                else:
+                    # Resource found in Firebase, load it
+                    worksheets_store[worksheet_id] = {
+                        'data': resource.get('content', {}),
+                        'images': resource.get('images', {}),
+                        'image_generation_status': {}
+                    }
             
             worksheet_store = worksheets_store[worksheet_id]
             current_worksheet = worksheet_store['data']
@@ -942,14 +1018,39 @@ def edit_worksheet(worksheet_id):
             yield f"data: {json.dumps({'type': 'status', 'message': '💾 Saving changes...'})}\n\n"
             
             try:
-                firebase_service.update_resource(worksheet_id, {
-                    'content': updated_worksheet,
-                    'images': worksheet_store['images']
-                })
-                
-                updated_resource = firebase_service.get_resource(worksheet_id)
-                if updated_resource:
-                    worksheet_store['images'] = updated_resource.get('images', {})
+                # Try to save the worksheet to Firebase, even for anonymous users
+                # This ensures worksheets persist across server instances
+                try:
+                    # First try to update if it exists
+                    firebase_service.update_resource(worksheet_id, {
+                        'content': updated_worksheet,
+                        'images': worksheet_store['images']
+                    })
+                    
+                    updated_resource = firebase_service.get_resource(worksheet_id)
+                    if updated_resource:
+                        worksheet_store['images'] = updated_resource.get('images', {})
+                except Exception as update_error:
+                    # If update fails (likely because resource doesn't exist yet),
+                    # try to save as a new resource without requiring authentication
+                    if firebase_service.enabled:
+                        print(f"Attempting to save worksheet as new resource: {worksheet_id}")
+                        try:
+                            # Save as anonymous resource
+                            firebase_service.save_resource(
+                                user_id="anonymous",  # Use anonymous user ID
+                                resource_data={
+                                    'resource_type': 'worksheet',
+                                    'title': updated_worksheet.get('title', 'Untitled Worksheet'),
+                                    'content': updated_worksheet,
+                                    'images': worksheet_store['images'],
+                                    'id': worksheet_id  # Force the ID to be the same
+                                },
+                                resource_id=worksheet_id  # Force the ID to be the same
+                            )
+                            print(f"Successfully saved anonymous worksheet: {worksheet_id}")
+                        except Exception as save_error:
+                            print(f"Warning: Failed to save anonymous worksheet: {save_error}")
             except Exception as e:
                 print(f"Warning: Failed to save worksheet to Firebase: {e}")
             
