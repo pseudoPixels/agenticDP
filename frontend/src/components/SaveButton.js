@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import resourceService from '../services/resourceService';
 
 function SaveButton({ lesson, images, resourceId, onSaved }) {
-  const { isAuthenticated, signIn } = useAuth();
+  const { isAuthenticated, signIn, user } = useAuth();
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -26,27 +26,46 @@ function SaveButton({ lesson, images, resourceId, onSaved }) {
       
       let savedResourceId = resourceId;
       
+      // When the user clicks save, we want to save it to their account
+      // regardless of whether it was temporary before
+      const userId = user?.uid || 'anonymous';
+      console.log(`SaveButton: User ID for save: ${userId}`);
+      
       if (resourceId) {
-        // Update existing resource
+        // This is an existing resource that might be temporary
+        // When user hits save, we want to save it properly to their account
+        console.log(`SaveButton: Saving ${resourceType} with ID: ${resourceId} to user account`);
+        
         if (isAuthenticated) {
-          // If authenticated, use regular update
-          await resourceService.updateResource(resourceId, {
-            content: lesson,
-            images: images
-          });
+          // If authenticated, save to user's account
+          try {
+            // First, check if this is a temporary resource
+            const resourceData = {
+              resource_type: resourceType,
+              title: lesson.title,
+              content: lesson,
+              images: images,
+              is_temporary: false // Mark as permanent
+            };
+            
+            // Use the proper save method based on whether user is authenticated
+            const response = await resourceService.saveResource(resourceData, resourceId);
+            console.log('Save response:', response);
+          } catch (saveError) {
+            console.error(`Error saving ${resourceType} to user account:`, saveError);
+            throw new Error(`Failed to save ${resourceType}: ${saveError.message}`);
+          }
         } else {
           // If not authenticated, use anonymous save
-          console.log(`SaveButton: Using anonymous save for existing ${resourceType} with ID: ${resourceId}`);
-          console.log(`SaveButton: Title: ${lesson.title}`);
-          console.log(`SaveButton: Images count: ${Object.keys(images).length}`);
-          
+          console.log(`SaveButton: Using anonymous save for ${resourceType} with ID: ${resourceId}`);
           try {
             const response = await resourceService.saveAnonymousResource(
               resourceId,
               resourceType,
               lesson,
               images,
-              lesson.title
+              lesson.title,
+              false // is_temporary = false
             );
             console.log('Anonymous save response:', response);
           } catch (saveError) {
@@ -64,17 +83,17 @@ function SaveButton({ lesson, images, resourceId, onSaved }) {
             content: lesson,
             images: images,
             topic: lesson.topic,
-            version: lesson.version
+            version: lesson.version,
+            is_temporary: false // Mark as permanent
           };
 
           const response = await resourceService.saveResource(resourceData);
           savedResourceId = response.resource_id;
+          console.log(`SaveButton: Created new resource with ID: ${savedResourceId}`);
         } else {
           // If not authenticated, use anonymous save with generated ID
           const tempId = lesson.id || `temp-${Date.now()}`;
           console.log(`SaveButton: Using anonymous save for new ${resourceType} with ID: ${tempId}`);
-          console.log(`SaveButton: Title: ${lesson.title}`);
-          console.log(`SaveButton: Images count: ${Object.keys(images).length}`);
           
           try {
             const response = await resourceService.saveAnonymousResource(
@@ -82,7 +101,8 @@ function SaveButton({ lesson, images, resourceId, onSaved }) {
               resourceType,
               lesson,
               images,
-              lesson.title
+              lesson.title,
+              false // is_temporary = false
             );
             savedResourceId = tempId;
             console.log('Anonymous save response:', response);

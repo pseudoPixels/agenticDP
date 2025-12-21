@@ -49,10 +49,12 @@ def save_anonymous_resource(resource_type, resource_id):
         content = data.get('content')
         images = data.get('images', {})
         title = data.get('title', f'Untitled {resource_type.capitalize()}')
+        is_temporary = data.get('is_temporary', True)
         
         print(f"Content type: {type(content)}")
         print(f"Images count: {len(images)}")
         print(f"Title: {title}")
+        print(f"Is temporary: {is_temporary}")
         
         if not content:
             print("Error: Content is required but not provided")
@@ -102,11 +104,37 @@ def save_anonymous_resource(resource_type, resource_id):
             # Update existing resource
             print(f"Updating existing {resource_type} in Firebase: {resource_id}")
             try:
-                success = firebase_service.update_resource(resource_id, {
+                # Update the resource with the new is_temporary flag
+                update_data = {
                     'content': content,
                     'images': images,
-                    'title': title
-                })
+                    'title': title,
+                    'is_temporary': is_temporary
+                }
+                
+                # If changing from temporary to permanent, update the user_id
+                if not is_temporary and existing_resource.get('user_id') == 'temp':
+                    # Create a new resource with the anonymous user_id instead of updating
+                    # This effectively transfers ownership from temp to anonymous
+                    firebase_service.save_resource(
+                        user_id="anonymous",
+                        resource_data={
+                            'resource_type': resource_type,
+                            'title': title,
+                            'content': content,
+                            'images': images,
+                            'id': resource_id,
+                            'is_temporary': False,
+                            # Copy over any other important fields
+                            'created_at': existing_resource.get('created_at'),
+                            'creator_id': existing_resource.get('creator_id')
+                        },
+                        resource_id=resource_id
+                    )
+                    success = True
+                else:
+                    # Normal update
+                    success = firebase_service.update_resource(resource_id, update_data)
                 
                 if success:
                     print(f"✓ {resource_type.capitalize()} updated successfully in Firebase")
@@ -126,14 +154,18 @@ def save_anonymous_resource(resource_type, resource_id):
             print(f"Creating new {resource_type} in Firebase with ID: {resource_id}")
             try:
                 try:
+                    # Use temp user_id for temporary resources, anonymous for permanent ones
+                    user_id = "temp" if is_temporary else "anonymous"
+                    
                     firebase_service.save_resource(
-                        user_id="anonymous",
+                        user_id=user_id,
                         resource_data={
                             'resource_type': resource_type,
                             'title': title,
                             'content': content,
                             'images': images,
-                            'id': resource_id  # Include ID in content
+                            'id': resource_id,  # Include ID in content
+                            'is_temporary': is_temporary  # Store temporary flag
                         },
                         resource_id=resource_id
                     )
@@ -816,20 +848,22 @@ def generate_worksheet_stream():
             }
             
             # Save to Firebase immediately to ensure persistence across server instances
-            # Use anonymous user ID if user is not logged in
+            # But mark it as temporary so it doesn't appear in the user's library
             if firebase_service.enabled:
                 try:
                     firebase_service.save_resource(
-                        user_id=user_id or "anonymous",
+                        user_id="temp",  # Use temp user ID to indicate it's not saved yet
                         resource_data={
                             'resource_type': 'worksheet',
                             'title': worksheet_data.get('title', 'Untitled Worksheet'),
                             'content': worksheet_data,
                             'images': {},
+                            'is_temporary': True,  # Mark as temporary
+                            'creator_id': user_id or "anonymous"  # Store original creator
                         },
                         resource_id=worksheet_id
                     )
-                    print(f"✓ Worksheet saved to Firebase with ID: {worksheet_id}")
+                    print(f"✓ Worksheet saved to Firebase with ID: {worksheet_id} (temporary)")
                 except Exception as e:
                     print(f"Warning: Failed to save worksheet to Firebase: {e}")
                     # Continue anyway - we still have it in memory
@@ -1190,11 +1224,24 @@ def edit_worksheet(worksheet_id):
             try:
                 # Try to save the worksheet to Firebase, even for anonymous users
                 # This ensures worksheets persist across server instances
+                # Get the original resource to check if it's temporary
+                original_resource = None
+                is_temporary = True  # Default to temporary if we can't determine
+                creator_id = "temp"
+                
+                if firebase_service.enabled:
+                    original_resource = firebase_service.get_resource(worksheet_id)
+                    if original_resource:
+                        is_temporary = original_resource.get('is_temporary', True)
+                        creator_id = original_resource.get('creator_id', original_resource.get('user_id', "temp"))
+                
                 try:
-                    # First try to update if it exists
+                    # Update the resource, preserving its temporary status
                     firebase_service.update_resource(worksheet_id, {
                         'content': updated_worksheet,
-                        'images': worksheet_store['images']
+                        'images': worksheet_store['images'],
+                        'is_temporary': is_temporary,  # Preserve temporary status
+                        'creator_id': creator_id  # Preserve original creator
                     })
                     
                     updated_resource = firebase_service.get_resource(worksheet_id)
@@ -1204,23 +1251,25 @@ def edit_worksheet(worksheet_id):
                     # If update fails (likely because resource doesn't exist yet),
                     # try to save as a new resource without requiring authentication
                     if firebase_service.enabled:
-                        print(f"Attempting to save worksheet as new resource: {worksheet_id}")
+                        print(f"Attempting to save worksheet as new temporary resource: {worksheet_id}")
                         try:
-                            # Save as anonymous resource
+                            # Save as temporary resource
                             firebase_service.save_resource(
-                                user_id="anonymous",  # Use anonymous user ID
+                                user_id="temp",  # Use temp user ID
                                 resource_data={
                                     'resource_type': 'worksheet',
                                     'title': updated_worksheet.get('title', 'Untitled Worksheet'),
                                     'content': updated_worksheet,
                                     'images': worksheet_store['images'],
-                                    'id': worksheet_id  # Force the ID to be the same
+                                    'id': worksheet_id,  # Force the ID to be the same
+                                    'is_temporary': True,  # Mark as temporary
+                                    'creator_id': creator_id  # Store original creator
                                 },
                                 resource_id=worksheet_id  # Force the ID to be the same
                             )
-                            print(f"Successfully saved anonymous worksheet: {worksheet_id}")
+                            print(f"Successfully saved temporary worksheet: {worksheet_id}")
                         except Exception as save_error:
-                            print(f"Warning: Failed to save anonymous worksheet: {save_error}")
+                            print(f"Warning: Failed to save temporary worksheet: {save_error}")
             except Exception as e:
                 print(f"Warning: Failed to save worksheet to Firebase: {e}")
             

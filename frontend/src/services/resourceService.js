@@ -14,12 +14,19 @@ class ResourceService {
   /**
    * Save a resource anonymously (no auth required)
    * Used for saving generated resources before the user has logged in
+   * @param {string} resourceId - The ID of the resource
+   * @param {string} resourceType - The type of resource (lesson, worksheet, presentation)
+   * @param {object} content - The content of the resource
+   * @param {object} images - The images for the resource
+   * @param {string} title - The title of the resource
+   * @param {boolean} isTemporary - Whether this is a temporary save (default: true)
    */
-  async saveAnonymousResource(resourceId, resourceType, content, images, title) {
+  async saveAnonymousResource(resourceId, resourceType, content, images, title, isTemporary = true) {
     const response = await axios.post(`/api/anonymous/save/${resourceType}/${resourceId}`, {
       content,
       images,
-      title
+      title,
+      is_temporary: isTemporary
     });
     return response.data;
   }
