@@ -36,14 +36,23 @@ function SaveButton({ lesson, images, resourceId, onSaved }) {
           });
         } else {
           // If not authenticated, use anonymous save
-          const response = await resourceService.saveAnonymousResource(
-            resourceId,
-            resourceType,
-            lesson,
-            images,
-            lesson.title
-          );
-          console.log('Anonymous save response:', response);
+          console.log(`SaveButton: Using anonymous save for existing ${resourceType} with ID: ${resourceId}`);
+          console.log(`SaveButton: Title: ${lesson.title}`);
+          console.log(`SaveButton: Images count: ${Object.keys(images).length}`);
+          
+          try {
+            const response = await resourceService.saveAnonymousResource(
+              resourceId,
+              resourceType,
+              lesson,
+              images,
+              lesson.title
+            );
+            console.log('Anonymous save response:', response);
+          } catch (saveError) {
+            console.error(`Error in anonymous save for ${resourceType}:`, saveError);
+            throw new Error(`Failed to save ${resourceType}: ${saveError.message}`);
+          }
         }
       } else {
         // Create new resource
@@ -63,15 +72,24 @@ function SaveButton({ lesson, images, resourceId, onSaved }) {
         } else {
           // If not authenticated, use anonymous save with generated ID
           const tempId = lesson.id || `temp-${Date.now()}`;
-          const response = await resourceService.saveAnonymousResource(
-            tempId,
-            resourceType,
-            lesson,
-            images,
-            lesson.title
-          );
-          savedResourceId = tempId;
-          console.log('Anonymous save response:', response);
+          console.log(`SaveButton: Using anonymous save for new ${resourceType} with ID: ${tempId}`);
+          console.log(`SaveButton: Title: ${lesson.title}`);
+          console.log(`SaveButton: Images count: ${Object.keys(images).length}`);
+          
+          try {
+            const response = await resourceService.saveAnonymousResource(
+              tempId,
+              resourceType,
+              lesson,
+              images,
+              lesson.title
+            );
+            savedResourceId = tempId;
+            console.log('Anonymous save response:', response);
+          } catch (saveError) {
+            console.error(`Error in anonymous save for new ${resourceType}:`, saveError);
+            throw new Error(`Failed to save ${resourceType}: ${saveError.message}`);
+          }
         }
         
         if (onSaved && savedResourceId) {

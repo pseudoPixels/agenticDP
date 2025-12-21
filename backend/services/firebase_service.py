@@ -169,12 +169,36 @@ class FirebaseService:
             raise Exception("Firebase Storage not enabled")
         
         try:
+            # Skip if image_data is already a URL
+            if image_data.startswith('http'):
+                print(f"  ℹ️ Image {image_key} is already a URL, skipping upload")
+                return image_data
+                
             # Remove data:image prefix if present
             if ',' in image_data:
                 image_data = image_data.split(',')[1]
             
-            # Decode base64
-            image_bytes = base64.b64decode(image_data)
+            # Fix padding issues
+            # Add padding characters if needed
+            padding_needed = len(image_data) % 4
+            if padding_needed:
+                image_data += '=' * (4 - padding_needed)
+                
+            # Remove any invalid characters
+            image_data = ''.join(c for c in image_data if c in 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=')
+            
+            try:
+                # Decode base64
+                image_bytes = base64.b64decode(image_data)
+            except Exception as decode_error:
+                print(f"  ⚠️ Failed to decode base64 for {image_key}: {decode_error}")
+                # Try again with a more lenient approach
+                try:
+                    # Try with URL-safe base64
+                    image_bytes = base64.urlsafe_b64decode(image_data + '=' * (4 - len(image_data) % 4))
+                except Exception as e:
+                    print(f"  ❌ All base64 decode attempts failed for {image_key}: {e}")
+                    raise
             
             # Create unique filename
             filename = f"resources/{resource_id}/{image_key}.png"
@@ -197,24 +221,51 @@ class FirebaseService:
     def upload_images(self, images: Dict, resource_id: str) -> Dict:
         """
         Upload multiple images and return URLs
-        Raises exception if any upload fails
+        Continues even if some uploads fail
         """
         image_urls = {}
         failed_uploads = []
         
-        for key, image_data in images.items():
-            if image_data:
-                try:
-                    url = self.upload_image(image_data, resource_id, key)
-                    image_urls[key] = url
-                    print(f"  ✓ Uploaded {key}")
-                except Exception as e:
-                    print(f"  ✗ Failed to upload image {key}: {e}")
-                    failed_uploads.append(key)
+        # Skip if images is None or empty
+        if not images:
+            print("  ℹ️ No images to upload")
+            return {}
+            
+        print(f"  ℹ️ Attempting to upload {len(images)} images")
         
-        # If any uploads failed, raise exception to trigger fallback
+        # Process each image
+        for key, image_data in images.items():
+            # Skip empty images
+            if not image_data:
+                print(f"  ℹ️ Image {key} is empty, skipping")
+                continue
+                
+            # Skip if already a URL
+            if isinstance(image_data, str) and image_data.startswith('http'):
+                print(f"  ℹ️ Image {key} is already a URL, keeping as is")
+                image_urls[key] = image_data
+                continue
+                
+            # Try to upload
+            try:
+                url = self.upload_image(image_data, resource_id, key)
+                image_urls[key] = url
+                print(f"  ✓ Uploaded {key}")
+            except Exception as e:
+                print(f"  ✗ Failed to upload image {key}: {e}")
+                # Keep the original image data if upload fails
+                if isinstance(image_data, str):
+                    if len(image_data) > 100:
+                        print(f"  ℹ️ Keeping original image data for {key} (truncated): {image_data[:50]}...")
+                    else:
+                        print(f"  ℹ️ Keeping original image data for {key}: {image_data}")
+                    image_urls[key] = image_data
+                failed_uploads.append(key)
+        
+        # Warn about failed uploads but don't raise exception
         if failed_uploads:
-            raise Exception(f"Failed to upload {len(failed_uploads)} images: {', '.join(failed_uploads)}")
+            print(f"  ⚠️ Warning: {len(failed_uploads)} images failed to upload: {', '.join(failed_uploads)}")
+            print("  ℹ️ Continuing with available images")
         
         return image_urls
     
@@ -241,20 +292,20 @@ class FirebaseService:
             resource_ref = self.db.collection('resources').document()
             resource_id = resource_ref.id
         
-        # Handle images - ALWAYS use Firebase Storage (required)
+        # Handle images - Use Firebase Storage if available
         if 'images' in resource_data and resource_data['images']:
             if not self.bucket:
-                raise Exception(
-                    "Firebase Storage is required but not available. "
-                    "Please enable Firebase Storage in your Firebase Console: "
-                    f"https://console.firebase.google.com/project/{os.getenv('FIREBASE_PROJECT_ID', 'your-project')}/storage"
-                )
-            
-            # Upload to Firebase Storage
-            print(f"Uploading {len(resource_data['images'])} images to Firebase Storage...")
-            image_urls = self.upload_images(resource_data['images'], resource_id)
-            resource_data['images'] = image_urls  # Replace base64 with URLs
-            print(f"✓ Images uploaded to Storage")
+                print("Warning: Firebase Storage is not available. Images will be stored as base64.")
+            else:
+                # Upload to Firebase Storage
+                print(f"Uploading {len(resource_data['images'])} images to Firebase Storage...")
+                try:
+                    image_urls = self.upload_images(resource_data['images'], resource_id)
+                    resource_data['images'] = image_urls  # Replace base64 with URLs
+                    print(f"✓ Images processed for storage")
+                except Exception as e:
+                    print(f"Warning: Some images could not be uploaded to Firebase Storage: {e}")
+                    print("Continuing with save operation using available images")
         
         # Convert content to JSON string if it's too complex
         if 'content' in resource_data and isinstance(resource_data['content'], dict):
@@ -339,12 +390,22 @@ class FirebaseService:
                 # Upload any base64 images to Storage
                 if images_to_upload:
                     if not self.bucket:
-                        raise Exception("Firebase Storage is required for image updates")
-                    
-                    print(f"Uploading {len(images_to_upload)} new images to Firebase Storage...")
-                    uploaded_urls = self.upload_images(images_to_upload, resource_id)
-                    final_images.update(uploaded_urls)
-                    print(f"✓ Images uploaded to Storage")
+                        print("Warning: Firebase Storage is not available. Images will be stored as base64.")
+                    else:
+                        print(f"Uploading {len(images_to_upload)} new images to Firebase Storage...")
+                        uploaded_urls = {}
+                        try:
+                            uploaded_urls = self.upload_images(images_to_upload, resource_id)
+                            final_images.update(uploaded_urls)
+                            print(f"✓ Images processed for storage")
+                        except Exception as e:
+                            print(f"Warning: Some images could not be uploaded to Firebase Storage: {e}")
+                            print("Continuing with update operation using available images")
+                        
+                        # Keep original images that failed to upload
+                        for key, value in images_to_upload.items():
+                            if key not in uploaded_urls:
+                                final_images[key] = value
                 
                 updates['images'] = final_images
             

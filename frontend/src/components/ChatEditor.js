@@ -122,7 +122,14 @@ function ChatEditor({ lessonId, contentType = 'lesson', onLessonUpdated, onProce
                     console.log('Updated content:', content);
                     console.log('Content has contentType:', content?.contentType);
                     
-                    // Fetch full data with images from the appropriate endpoint
+                    // IMPORTANT: Update the content immediately with the data we received
+                    // This ensures we show the updated content right away
+                    if (content) {
+                      console.log('ChatEditor: Immediately updating with received content');
+                      onLessonUpdated(content, {});
+                    }
+                    
+                    // Then fetch full data with images from the appropriate endpoint
                     const fetchEndpoint = contentType === 'presentation' 
                       ? `/api/presentation/${lessonId}`
                       : contentType === 'worksheet'
@@ -137,10 +144,18 @@ function ChatEditor({ lessonId, contentType = 'lesson', onLessonUpdated, onProce
                         console.log('Fetch result:', result);
                         if (result.success && onLessonUpdated) {
                           const contentData = result.lesson || result.presentation || result.worksheet;
-                          console.log('ChatEditor: Fetched content:', contentData);
-                          console.log('ChatEditor: Fetched content type:', contentData?.contentType);
-                          console.log('ChatEditor: Fetched images:', Object.keys(result.images || {}));
-                          onLessonUpdated(contentData, result.images || {});
+                          // Only update if we have images or if the content is different
+                          const hasImages = Object.keys(result.images || {}).length > 0;
+                          const contentChanged = JSON.stringify(contentData) !== JSON.stringify(content);
+                          
+                          if (hasImages || contentChanged) {
+                            console.log('ChatEditor: Updating with fetched content and images');
+                            console.log('ChatEditor: Fetched content type:', contentData?.contentType);
+                            console.log('ChatEditor: Fetched images:', Object.keys(result.images || {}));
+                            onLessonUpdated(contentData, result.images || {});
+                          } else {
+                            console.log('ChatEditor: No need to update, content is the same and no images');
+                          }
                         } else {
                           console.error('Fetch failed or no success:', result);
                         }

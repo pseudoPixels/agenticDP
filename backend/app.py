@@ -36,65 +36,145 @@ def save_anonymous_resource(resource_type, resource_id):
     allowing users to save their work even if they're not logged in.
     """
     try:
+        print(f"\n=== Anonymous Save Request ===\nResource Type: {resource_type}\nResource ID: {resource_id}")
+        
+        # Check if request has JSON data
+        if not request.is_json:
+            print("Error: Request does not contain JSON data")
+            return jsonify({"error": "Request must be JSON"}), 400
+            
         data = request.json
+        print(f"Request data keys: {list(data.keys() if data else [])}")
+        
         content = data.get('content')
         images = data.get('images', {})
         title = data.get('title', f'Untitled {resource_type.capitalize()}')
         
+        print(f"Content type: {type(content)}")
+        print(f"Images count: {len(images)}")
+        print(f"Title: {title}")
+        
         if not content:
+            print("Error: Content is required but not provided")
             return jsonify({"error": "Content is required"}), 400
             
         # Validate resource type
         valid_types = ['lesson', 'worksheet', 'presentation']
         if resource_type not in valid_types:
+            print(f"Error: Invalid resource type: {resource_type}")
             return jsonify({"error": "Invalid resource type"}), 400
         
-        # Check if resource already exists
-        existing_resource = None
-        if firebase_service.enabled:
-            existing_resource = firebase_service.get_resource(resource_id)
+        # Check if Firebase is enabled
+        if not firebase_service.enabled:
+            print("Warning: Firebase is not enabled, saving to memory only")
+            
+            # Store in memory
+            if resource_type == 'worksheet':
+                worksheets_store[resource_id] = {
+                    'data': content,
+                    'images': images,
+                    'image_generation_status': {}
+                }
+            elif resource_type == 'presentation':
+                presentations_store[resource_id] = {
+                    'data': content,
+                    'images': images,
+                    'image_generation_status': {}
+                }
+            else:  # lesson
+                lessons_store[resource_id] = {
+                    'data': content,
+                    'images': images,
+                    'image_generation_status': {}
+                }
+                
+            return jsonify({
+                "success": True,
+                "message": f"{resource_type.capitalize()} saved to memory",
+                "resource_id": resource_id
+            })
+        
+        # Check if resource already exists in Firebase
+        existing_resource = firebase_service.get_resource(resource_id)
+        print(f"Resource exists in Firebase: {existing_resource is not None}")
         
         if existing_resource:
             # Update existing resource
-            success = firebase_service.update_resource(resource_id, {
-                'content': content,
-                'images': images,
-                'title': title
-            })
-            
-            if success:
-                return jsonify({
-                    "success": True,
-                    "message": f"{resource_type.capitalize()} updated successfully",
-                    "resource_id": resource_id
+            print(f"Updating existing {resource_type} in Firebase: {resource_id}")
+            try:
+                success = firebase_service.update_resource(resource_id, {
+                    'content': content,
+                    'images': images,
+                    'title': title
                 })
-            else:
-                return jsonify({"error": f"Failed to update {resource_type}"}), 500
+                
+                if success:
+                    print(f"✓ {resource_type.capitalize()} updated successfully in Firebase")
+                    return jsonify({
+                        "success": True,
+                        "message": f"{resource_type.capitalize()} updated successfully",
+                        "resource_id": resource_id
+                    })
+                else:
+                    print(f"Error: Failed to update {resource_type} in Firebase")
+                    return jsonify({"error": f"Failed to update {resource_type}"}), 500
+            except Exception as update_error:
+                print(f"Error updating {resource_type} in Firebase: {update_error}")
+                return jsonify({"error": f"Failed to update {resource_type}: {str(update_error)}"}), 500
         else:
             # Create new resource
+            print(f"Creating new {resource_type} in Firebase with ID: {resource_id}")
             try:
-                firebase_service.save_resource(
-                    user_id="anonymous",
-                    resource_data={
-                        'resource_type': resource_type,
-                        'title': title,
-                        'content': content,
-                        'images': images
-                    },
-                    resource_id=resource_id
-                )
+                try:
+                    firebase_service.save_resource(
+                        user_id="anonymous",
+                        resource_data={
+                            'resource_type': resource_type,
+                            'title': title,
+                            'content': content,
+                            'images': images,
+                            'id': resource_id  # Include ID in content
+                        },
+                        resource_id=resource_id
+                    )
+                except Exception as save_error:
+                    print(f"Warning: Error during Firebase save but continuing: {save_error}")
+                    # Store in memory as fallback
+                    if resource_type == 'worksheet':
+                        worksheets_store[resource_id] = {
+                            'data': content,
+                            'images': images,
+                            'image_generation_status': {}
+                        }
+                    elif resource_type == 'presentation':
+                        presentations_store[resource_id] = {
+                            'data': content,
+                            'images': images,
+                            'image_generation_status': {}
+                        }
+                    else:  # lesson
+                        lessons_store[resource_id] = {
+                            'data': content,
+                            'images': images,
+                            'image_generation_status': {}
+                        }
                 
+                print(f"✓ New {resource_type} saved successfully to Firebase")
                 return jsonify({
                     "success": True,
                     "message": f"{resource_type.capitalize()} saved successfully",
                     "resource_id": resource_id
                 })
-            except Exception as e:
-                print(f"Error saving anonymous resource: {e}")
-                return jsonify({"error": f"Failed to save {resource_type}"}), 500
+            except Exception as save_error:
+                print(f"Error saving new {resource_type} to Firebase: {save_error}")
+                import traceback
+                traceback.print_exc()
+                return jsonify({"error": f"Failed to save {resource_type}: {str(save_error)}"}), 500
     except Exception as e:
-        print(f"Error in save_anonymous_resource: {e}")
-        return jsonify({"error": str(e)}), 500
+        print(f"Unexpected error in save_anonymous_resource: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": f"Server error: {str(e)}"}), 500
 
 # Initialize agents
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
@@ -787,6 +867,43 @@ def get_worksheet(worksheet_id):
     """Get a worksheet by ID"""
     try:
         # First check if worksheet is in memory
+        in_memory_worksheet = None
+        if worksheet_id in worksheets_store:
+            in_memory_worksheet = worksheets_store[worksheet_id]
+            print(f"Found worksheet {worksheet_id} in memory")
+        
+        # Try to load from Firebase
+        firebase_resource = None
+        if firebase_service.enabled:
+            firebase_resource = firebase_service.get_resource(worksheet_id)
+            if firebase_resource:
+                print(f"Found worksheet {worksheet_id} in Firebase")
+                
+                # If we have both in-memory and Firebase versions, use the most recent one
+                if in_memory_worksheet:
+                    # Compare timestamps if available
+                    firebase_updated_at = firebase_resource.get('updated_at')
+                    
+                    if firebase_updated_at:
+                        # Use Firebase version if it's newer
+                        print(f"Using Firebase version of worksheet {worksheet_id} as it's more recent")
+                        worksheets_store[worksheet_id] = {
+                            'data': firebase_resource.get('content', {}),
+                            'images': firebase_resource.get('images', {}),
+                            'image_generation_status': {}
+                        }
+                    else:
+                        # If no timestamp, assume in-memory is more recent
+                        print(f"Using in-memory version of worksheet {worksheet_id}")
+                else:
+                    # No in-memory version, load from Firebase
+                    worksheets_store[worksheet_id] = {
+                        'data': firebase_resource.get('content', {}),
+                        'images': firebase_resource.get('images', {}),
+                        'image_generation_status': {}
+                    }
+        
+        # Now return the worksheet from memory
         if worksheet_id in worksheets_store:
             worksheet_store = worksheets_store[worksheet_id]
             return jsonify({
@@ -795,23 +912,7 @@ def get_worksheet(worksheet_id):
                 "images": worksheet_store['images']
             })
         
-        # If not in memory, try to load from Firebase
-        if firebase_service.enabled:
-            resource = firebase_service.get_resource(worksheet_id)
-            if resource:
-                # Load into memory for future edits
-                worksheets_store[worksheet_id] = {
-                    'data': resource.get('content', {}),
-                    'images': resource.get('images', {}),
-                    'image_generation_status': {}
-                }
-                return jsonify({
-                    "success": True,
-                    "worksheet": resource.get('content', {}),
-                    "images": resource.get('images', {})
-                })
-        
-        # If we get here, try to create a temporary worksheet structure
+        # If we get here and still don't have the worksheet, try to create a temporary one
         # This is a fallback for production environments where the worksheet might have been
         # generated in a different server instance
         try:
