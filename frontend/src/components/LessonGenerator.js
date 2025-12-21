@@ -491,13 +491,13 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
 
   return (
     <div className="min-h-screen bg-white flex flex-col items-center justify-center px-4">
-      {/* Main Heading */}
-      <h1 className="text-3xl md:text-4xl font-bold text-gray-800 text-center mb-8">
-        Create resources for your homeschool
-      </h1>
-
+      <div className="flex flex-col items-center mb-0">
+        {/* Main Heading */}
+        <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">
+          Create resources for your homeschool
+        </h1>
       {/* Main Card */}
-      <div className="w-full max-w-3xl bg-white rounded-3xl shadow-[0_0_20px_rgba(16,185,129,0.2),0_0_40px_rgba(59,130,246,0.1),0_0_60px_rgba(168,85,247,0.05)] p-6">
+      <div className="w-full max-w-3xl bg-white rounded-3xl shadow-[0_0_20px_rgba(16,185,129,0.2),0_0_40px_rgba(59,130,246,0.1),0_0_60px_rgba(168,85,247,0.05)] p-6 mx-auto">
         <form onSubmit={handleGenerate} className="space-y-4">
           {/* Text Area */}
           <div>
@@ -510,7 +510,7 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
               }}
               onBlur={() => setIsTextareaFocused(false)}
               placeholder="Describe what you want to create..."
-              className={`w-full px-4 py-4 text-lg text-gray-700 placeholder-gray-400 bg-transparent border-0 rounded-lg resize-none focus:outline-none focus:ring-0 transition-all ease-in-out duration-500 scrollbar-hide overflow-hidden ${isTextareaFocused ? 'h-30' : 'h-10'}`}
+              className={`w-full px-4 py-4 text-lg text-gray-700 placeholder-gray-400 bg-transparent border-0 rounded-lg resize-none focus:outline-none focus:ring-0 transition-all ease-in-out duration-500 scrollbar-hide ${isTextareaFocused ? 'h-40 overflow-auto' : 'h-10 overflow-hidden'}`}
               disabled={isGenerating}
             />
           </div>
@@ -607,6 +607,7 @@ function LessonGenerator({ onLessonGenerated, isGenerating, setIsGenerating }) {
             </p>
           </div>
         )}
+      </div>
       </div>
       
       {/* Render PaywallModal directly in LessonGenerator */}
