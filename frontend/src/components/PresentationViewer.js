@@ -268,7 +268,7 @@ function PresentationViewer({ presentation, images, isProcessing = false }) {
           {presentation.topic && (
             <>
               <span>•</span>
-              <span>Topic: {presentation.topic}</span>
+              <span className="topic-text">Topic: {presentation.topic}</span>
             </>
           )}
         </div>

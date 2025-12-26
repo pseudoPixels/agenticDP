@@ -95,7 +95,7 @@ function LessonViewer({ lesson, images, isProcessing = false }) {
           <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-500">
             <span>Version {lesson.version}</span>
             <span>•</span>
-            <span>Topic: {lesson.topic}</span>
+            <span className="topic-text">Topic: {lesson.topic}</span>
           </div>
         </div>
 

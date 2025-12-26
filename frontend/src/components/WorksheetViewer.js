@@ -71,6 +71,12 @@ function WorksheetViewer({ worksheet, images, isProcessing = false }) {
               </span>
             </>
           )}
+          {worksheet.topic && (
+            <>
+              <span>•</span>
+              <span className="topic-text">Topic: {worksheet.topic}</span>
+            </>
+          )}
         </div>
 
         {/* Instructions */}
