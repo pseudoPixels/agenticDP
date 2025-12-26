@@ -30,7 +30,24 @@ function Home() {
   useEffect(() => {
     // Trigger navigation reset on component mount
     triggerNavigationReset();
-  }, [triggerNavigationReset]);
+    
+    // Add event listener for reset-to-create event
+    const handleResetToCreate = () => {
+      if (currentLesson) {
+        setCurrentLesson(null);
+        setLessonImages({});
+        setSavedResourceId(null);
+        setIsGenerating(false);
+      }
+    };
+    
+    window.addEventListener('reset-to-create', handleResetToCreate);
+    
+    // Clean up event listener
+    return () => {
+      window.removeEventListener('reset-to-create', handleResetToCreate);
+    };
+  }, [triggerNavigationReset, currentLesson]);
 
   const handleLessonGenerated = (lesson, images) => {
     console.log('Home - handleLessonGenerated called with images:', Object.keys(images));
@@ -79,6 +96,7 @@ function Home() {
       triggerNavigationReset();
     }, 500);
   };
+
 
   const handleDownloadPresentation = async () => {
     if (!currentLesson || !currentLesson.id) return;

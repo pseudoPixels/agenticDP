@@ -19,17 +19,29 @@ export function useNavigation() {
     }, 50);
   }, []);
   
+  // Helper to trigger reset to create view
+  const triggerResetToCreate = useCallback(() => {
+    // Dispatch a custom event to notify the Home component to reset to create view
+    window.dispatchEvent(new CustomEvent('reset-to-create'));
+  }, []);
+  
   // Force navigation to home page, ensuring state is reset
   const goToHome = useCallback(() => {
     // First trigger the navigation reset
     triggerNavigationReset();
     
+    // Trigger reset to create view
+    triggerResetToCreate();
+    
     // Then navigate with replace to ensure clean state
     navigate('/', { replace: true });
     
     // Trigger again after navigation
-    setTimeout(triggerNavigationReset, 100);
-  }, [navigate, triggerNavigationReset]);
+    setTimeout(() => {
+      triggerNavigationReset();
+      triggerResetToCreate();
+    }, 100);
+  }, [navigate, triggerNavigationReset, triggerResetToCreate]);
   
   // Navigate to library with state reset
   const goToLibrary = useCallback(() => {
@@ -60,7 +72,8 @@ export function useNavigation() {
     goToLibrary,
     goToRoute,
     navigate,
-    triggerNavigationReset
+    triggerNavigationReset,
+    triggerResetToCreate
   };
 }
 
