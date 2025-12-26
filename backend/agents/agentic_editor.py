@@ -326,11 +326,19 @@ Return ONLY valid JSON, no markdown or extra text."""
                 "preserve_content": True
             }
     
-    def _execute_plan(self, lesson_data: Dict[str, Any], user_request: str, plan: Dict[str, Any]) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
-        """Execute the planned changes"""
-        
+    def _execute_plan(self, lesson_data: Dict[str, Any], user_request: str, plan: Dict[str, Any]) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:        
         # Check if we need to preserve content (for translations, theme changes, etc.)
         preserve_content = plan.get('preserve_content', False)
+        
+        # Check if this is a translation request
+        translation_keywords = ['translate', 'translation', 'language', 'bangla', 'spanish', 'french']
+        is_translation = any(keyword in user_request.lower() for keyword in translation_keywords)
+        
+        if is_translation:
+            print("🌐 Translation request detected, ensuring content and images are preserved")
+            preserve_content = True
+            plan['preserve_content'] = True
+            plan['requires_image_regeneration'] = False
         
         # Generate the updated lesson content
         updated_lesson = self._generate_updated_content(lesson_data, user_request, plan)
@@ -338,8 +346,8 @@ Return ONLY valid JSON, no markdown or extra text."""
         # Determine image changes
         image_changes = []
         
-        # Only regenerate images if explicitly requested
-        if plan.get('requires_image_regeneration', False):
+        # Only regenerate images if explicitly requested and NOT a translation
+        if plan.get('requires_image_regeneration', False) and not is_translation:
             # For content preservation (translations/themes), we need to be extra careful with images
             if preserve_content:
                 print("📋 Content preservation enabled - carefully handling image changes")
@@ -356,7 +364,18 @@ Return ONLY valid JSON, no markdown or extra text."""
     def _generate_updated_content(self, lesson_data: Dict[str, Any], user_request: str, plan: Dict[str, Any]) -> Dict[str, Any]:
         """Generate the updated lesson content based on the plan"""
         
-        prompt = f"""You are an expert lesson editor. Update this lesson based on the user's request and execution plan.
+        # Determine if this is a presentation or a lesson
+        is_presentation = 'slides' in lesson_data
+        content_type = 'presentation' if is_presentation else 'lesson'
+        
+        # Check if this is a translation request
+        translation_keywords = ['translate', 'translation', 'language', 'bangla', 'spanish', 'french']
+        is_translation = any(keyword in user_request.lower() for keyword in translation_keywords)
+        
+        if is_translation:
+            print(f"🌐 Translation request detected for {content_type}, preserving structure and images")
+        
+        prompt = f"""You are an expert content editor. Update this {content_type} based on the user's request and execution plan.
 
 CURRENT LESSON (JSON):
 {json.dumps(lesson_data, indent=2)}
@@ -372,31 +391,50 @@ INSTRUCTIONS:
 3. NEVER remove any sections, images, or descriptions unless explicitly requested
 4. If translating or changing theme, modify ONLY the text content while keeping all structure intact
 5. For style changes (like Batman theme), modify text but PRESERVE all images (just update image_prompts)
-6. If adding a new section, create it with proper structure including:
+6. Keep the id and version unchanged
+7. CRITICAL: Ensure ALL fields from the original content are preserved in the output"""
+
+        # Add content-specific instructions based on content type
+        if is_presentation:
+            prompt += """
+
+PRESENTATION-SPECIFIC INSTRUCTIONS:
+1. For slides, preserve the 'type' field (title, section, content, chart, closing) for each slide
+2. When translating, translate ALL text content including slide titles, content, and bullet points
+3. NEVER remove slides unless explicitly requested by the user
+4. When adding slides, follow the same structure as existing slides of similar type
+5. For image handling, preserve all image_prompt fields and never remove them
+6. If the user asks to change slide order, preserve ALL slide content when reordering
+
+SLIDE NUMBERING (for reference when user says "first slide", "third slide", etc):
+- Slides are 0-indexed in the data structure but 1-indexed in user requests
+- "First slide" = slides[0]
+- "Second slide" = slides[1]
+- And so on..."""
+        else:
+            prompt += """
+
+LESSON-SPECIFIC INSTRUCTIONS:
+1. If adding a new section, create it with proper structure including:
    - heading/title
    - text/description/paragraphs
    - image_prompt (if images are mentioned or would enhance the section)
-7. If changing image style, update image_prompt fields to include the new style but KEEP the original subject
-8. Keep the lesson_id and version unchanged
-9. CRITICAL: Ensure ALL fields from the original lesson are preserved in the output
-
-IMPORTANT IMAGE HANDLING:
-- NEVER remove image_prompt fields unless explicitly requested
-- For "add images to all sections": Add image_prompt to sections that don't have them
-- For "add another image to X section": Convert image_prompt to array format: "image_prompts": ["existing prompt", "new prompt"]
-- For "make the second image X style": Update only that specific image's prompt
-- For image prompts, be very specific and descriptive
-- If user wants a specific style (cartoon, realistic, black and white, etc), include that in the image_prompt
-- Support both single image_prompt (string) and multiple image_prompts (array) formats
+2. If changing image style, update image_prompt fields to include the new style but KEEP the original subject
+3. For image prompts, be very specific and descriptive
+4. If user wants a specific style (cartoon, realistic, black and white, etc), include that in the image_prompt
+5. Support both single image_prompt (string) and multiple image_prompts (array) formats
 
 DISPLAY ORDER OF IMAGES (for reference when user says "second image", "third image", etc):
 1. Introduction image (if exists)
 2. First key concept image (key_concepts[0])
 3. Detailed content images (if any)
 4. Activities image (if exists)
-5. Summary image (if exists)
+5. Summary image (if exists)"""
 
-Return ONLY the complete updated lesson as valid JSON, no markdown or extra text."""
+        # Add final instruction
+        prompt += """
+
+Return ONLY the complete updated content as valid JSON, no markdown or extra text."""
 
         try:
             response = self.client.models.generate_content(
@@ -422,14 +460,40 @@ Return ONLY the complete updated lesson as valid JSON, no markdown or extra text
             return lesson_data
     
     def _verify_content_preservation(self, original_lesson: Dict[str, Any], updated_lesson: Dict[str, Any], plan: Dict[str, Any]) -> Dict[str, Any]:
-        """Verify that all original content structure is preserved in the updated lesson"""
+        """Verify that all original content structure is preserved in the updated lesson or presentation"""
         
         # Ensure all top-level keys from original are in updated
         for key in original_lesson:
             if key not in updated_lesson and key != 'version':
-                print(f"⚠️ Missing key in updated lesson: {key}. Restoring from original.")
+                print(f"⚠️ Missing key in updated content: {key}. Restoring from original.")
                 updated_lesson[key] = original_lesson[key]
         
+        # Check if this is a presentation (has slides)
+        if 'slides' in original_lesson and 'slides' in updated_lesson:
+            print("📊 Detected presentation content, preserving slide structure and images")
+            
+            # Ensure we have at least as many slides
+            if len(updated_lesson['slides']) < len(original_lesson['slides']):
+                print(f"⚠️ Slides count reduced from {len(original_lesson['slides'])} to {len(updated_lesson['slides'])}. Restoring missing slides.")
+                # Add missing slides
+                updated_lesson['slides'].extend(original_lesson['slides'][len(updated_lesson['slides']):]) 
+            
+            # Check each slide for image_prompt preservation
+            for i, slide in enumerate(original_lesson['slides']):
+                if i < len(updated_lesson['slides']):
+                    # Preserve image_prompt if it existed
+                    if 'image_prompt' in slide and 'image_prompt' not in updated_lesson['slides'][i]:
+                        print(f"⚠️ Slide {i} image_prompt was lost. Restoring.")
+                        updated_lesson['slides'][i]['image_prompt'] = slide['image_prompt']
+                    
+                    # Ensure slide type is preserved
+                    if 'type' in slide and ('type' not in updated_lesson['slides'][i] or updated_lesson['slides'][i]['type'] != slide['type']):
+                        print(f"⚠️ Slide {i} type was changed or lost. Restoring.")
+                        updated_lesson['slides'][i]['type'] = slide['type']
+            
+            return updated_lesson
+        
+        # Standard lesson content preservation
         # Check for introduction
         if 'introduction' in original_lesson and 'introduction' in updated_lesson:
             # Ensure image_prompt is preserved if it existed
@@ -492,6 +556,14 @@ Return ONLY the complete updated lesson as valid JSON, no markdown or extra text
         preserve_content = plan.get('preserve_content', False)
         
         print(f"🖼️  Generating image changes. Targets: {image_targets}, Style: {image_style}, Preserve Content: {preserve_content}")
+        
+        # Skip image regeneration for translations if preserve_content is True
+        translation_keywords = ['translate', 'translation', 'language', 'bangla', 'spanish', 'french']
+        is_translation_request = any(keyword in str(plan).lower() for keyword in translation_keywords)
+        
+        if is_translation_request and preserve_content:
+            print("🌐 Translation detected with preserve_content=True. Skipping image regeneration.")
+            return []
         
         # For character themes or style changes, we need to enhance the image prompts
         character_keywords = ['batman', 'spider man', 'spiderman', 'superman', 'wonder woman', 'iron man']

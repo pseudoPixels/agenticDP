@@ -207,12 +207,14 @@ function App() {
                 )}
               </div>
 
-              {/* Chat Editor - Only for lessons, not presentations or worksheets */}
-              {!isPresentation && !isWorksheet && (
+              {/* Chat Editor - For lessons and presentations */}
+              {!isWorksheet && (
                 <div className="lg:col-span-1">
                   <ChatEditor
                     lessonId={currentLesson.id}
+                    contentType={contentType || 'lesson'}
                     onLessonUpdated={handleLessonUpdated}
+                    onProcessingChange={(isProcessing) => setIsGenerating(isProcessing)}
                   />
                 </div>
               )}
@@ -232,12 +234,14 @@ function App() {
               )}
             </div>
 
-            {/* Chat Editor - Fixed at bottom - Only for lessons */}
-            {!isPresentation && !isWorksheet && (
+            {/* Chat Editor - Fixed at bottom - For lessons and presentations */}
+            {!isWorksheet && (
               <div className="border-t border-gray-200 bg-white safe-bottom">
                 <ChatEditor
                   lessonId={currentLesson.id}
+                  contentType={contentType || 'lesson'}
                   onLessonUpdated={handleLessonUpdated}
+                  onProcessingChange={(isProcessing) => setIsGenerating(isProcessing)}
                   isMobile={true}
                 />
               </div>

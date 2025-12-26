@@ -2,12 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { MessageCircle, Send, Loader2 } from 'lucide-react';
 
 function ChatEditor({ lessonId, contentType = 'lesson', onLessonUpdated, onProcessingChange, isMobile = false }) {
-  const [messages, setMessages] = useState([
-    // {
-    //   role: 'assistant',
-    //   content: '👋 Hi! I\'m your Doodlepad Agent. I can help you with:\n\n📝 **Text Edits:**\n• "Make the introduction longer"\n• "Rewrite everything in Batman theme"\n• "Add more examples to key concepts"\n\n🖼️ **Image Edits:**\n• "Make the intro image suitable for grade 5 kid"\n• "Change all images to cartoon style"\n• "Add an image to the summary section"\n• "Remove all images"\n\n➕ **Structure Changes:**\n• "Add a new section called \'Real World Examples\'"\n• "Add a \'Household Example\' section with an image"\n• "Remove the activities section"\n\nJust tell me what you want to change!'
-    // }
-  ]);
+  const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [showChatWindow, setShowChatWindow] = useState(false);
@@ -200,12 +195,21 @@ function ChatEditor({ lessonId, contentType = 'lesson', onLessonUpdated, onProce
     }
   };
 
-  const quickActions = [
+  const lessonQuickActions = [
     'Make intro image suitable for grade 5 kid',
     'Rewrite in Batman theme',
     'Change the intro image to cartoon style',
     'Make introduction longer'
   ];
+
+  const presentationQuickActions = [
+    'Make the first slide image black and white',
+    'Translate to Bangla',
+    'Add a conclusion slide',
+    'Make all slides more colorful'
+  ];
+
+  const quickActions = contentType === 'presentation' ? presentationQuickActions : lessonQuickActions;
 
   const handleQuickAction = (action) => {
     setInput(action);

@@ -83,6 +83,11 @@ export const editLesson = async (lessonId, editRequest) => {
   return response.data;
 };
 
+export const editPresentation = async (presentationId, editRequest) => {
+  const response = await api.post(`/edit-presentation/${presentationId}`, { request: editRequest });
+  return response.data;
+};
+
 export const listLessons = async () => {
   const response = await api.get('/lessons');
   return response.data;
