@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Save, Check, Loader2 } from 'lucide-react';
+import { Save, Check, Loader2, LogIn } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import resourceService from '../services/resourceService';
 
@@ -8,8 +8,34 @@ function SaveButton({ lesson, images, resourceId, onSaved }) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
+  // Main handler for the save button click
   const handleSave = async () => {
-    // Save or update the lesson
+    // If not authenticated, prompt for login
+    if (!isAuthenticated) {
+      handleLogin();
+      return;
+    }
+    
+    // Otherwise, proceed with saving
+    await saveResource();
+  };
+
+  // Handle login request
+  const handleLogin = async () => {
+    try {
+      setSaving(true);
+      await signIn();
+      // After successful login, we'll save the resource
+      await saveResource();
+    } catch (error) {
+      console.error('Error during login:', error);
+      alert('Login failed. Please try again.');
+      setSaving(false);
+    }
+  };
+
+  // Function to save the resource
+  const saveResource = async () => {
     try {
       setSaving(true);
       
@@ -36,81 +62,34 @@ function SaveButton({ lesson, images, resourceId, onSaved }) {
         // When user hits save, we want to save it properly to their account
         console.log(`SaveButton: Saving ${resourceType} with ID: ${resourceId} to user account`);
         
-        if (isAuthenticated) {
-          // If authenticated, save to user's account
-          try {
-            // First, check if this is a temporary resource
-            const resourceData = {
-              resource_type: resourceType,
-              title: lesson.title,
-              content: lesson,
-              images: images,
-              is_temporary: false // Mark as permanent
-            };
-            
-            // Use the proper save method based on whether user is authenticated
-            const response = await resourceService.saveResource(resourceData, resourceId);
-            console.log('Save response:', response);
-          } catch (saveError) {
-            console.error(`Error saving ${resourceType} to user account:`, saveError);
-            throw new Error(`Failed to save ${resourceType}: ${saveError.message}`);
-          }
-        } else {
-          // If not authenticated, use anonymous save
-          console.log(`SaveButton: Using anonymous save for ${resourceType} with ID: ${resourceId}`);
-          try {
-            const response = await resourceService.saveAnonymousResource(
-              resourceId,
-              resourceType,
-              lesson,
-              images,
-              lesson.title,
-              false // is_temporary = false
-            );
-            console.log('Anonymous save response:', response);
-          } catch (saveError) {
-            console.error(`Error in anonymous save for ${resourceType}:`, saveError);
-            throw new Error(`Failed to save ${resourceType}: ${saveError.message}`);
-          }
-        }
+        // First, check if this is a temporary resource
+        const resourceData = {
+          resource_type: resourceType,
+          title: lesson.title,
+          content: lesson,
+          images: images,
+          is_temporary: false // Mark as permanent
+        };
+        
+        // Use the proper save method based on whether user is authenticated
+        const response = await resourceService.saveResource(resourceData, resourceId);
+        console.log('Save response:', response);
       } else {
         // Create new resource
-        if (isAuthenticated) {
-          // If authenticated, use regular save
-          const resourceData = {
-            resource_type: resourceType,
-            title: lesson.title,
-            content: lesson,
-            images: images,
-            topic: lesson.topic,
-            version: lesson.version,
-            is_temporary: false // Mark as permanent
-          };
+        // Always use regular save since user must be authenticated
+        const resourceData = {
+          resource_type: resourceType,
+          title: lesson.title,
+          content: lesson,
+          images: images,
+          topic: lesson.topic,
+          version: lesson.version,
+          is_temporary: false // Mark as permanent
+        };
 
-          const response = await resourceService.saveResource(resourceData);
-          savedResourceId = response.resource_id;
-          console.log(`SaveButton: Created new resource with ID: ${savedResourceId}`);
-        } else {
-          // If not authenticated, use anonymous save with generated ID
-          const tempId = lesson.id || `temp-${Date.now()}`;
-          console.log(`SaveButton: Using anonymous save for new ${resourceType} with ID: ${tempId}`);
-          
-          try {
-            const response = await resourceService.saveAnonymousResource(
-              tempId,
-              resourceType,
-              lesson,
-              images,
-              lesson.title,
-              false // is_temporary = false
-            );
-            savedResourceId = tempId;
-            console.log('Anonymous save response:', response);
-          } catch (saveError) {
-            console.error(`Error in anonymous save for new ${resourceType}:`, saveError);
-            throw new Error(`Failed to save ${resourceType}: ${saveError.message}`);
-          }
-        }
+        const response = await resourceService.saveResource(resourceData);
+        savedResourceId = response.resource_id;
+        console.log(`SaveButton: Created new resource with ID: ${savedResourceId}`);
         
         if (onSaved && savedResourceId) {
           onSaved(savedResourceId);
@@ -145,7 +124,7 @@ function SaveButton({ lesson, images, resourceId, onSaved }) {
       className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all ${
         saved
           ? 'bg-green-500 text-white'
-          : 'bg-gradient-to-r from-emerald-400 to-teal-400 hover:from-emerald-500 hover:to-teal-500 text-white'
+          : 'bg-emerald-500 hover:bg-emerald-600 text-white'
       } disabled:opacity-50 disabled:cursor-not-allowed`}
     >
       {saving ? (
@@ -157,6 +136,11 @@ function SaveButton({ lesson, images, resourceId, onSaved }) {
         <>
           <Check className="w-4 h-4" />
           Saved!
+        </>
+      ) : !isAuthenticated ? (
+        <>
+          <LogIn className="w-4 h-4" />
+          Save
         </>
       ) : (
         <>
